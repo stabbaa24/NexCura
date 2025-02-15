@@ -1,20 +1,45 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+// App.tsx
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import HomeScreen from './screens/HomeScreen';
+import CalendarScreen from './screens/CalendarScreen';
 
-export default function App() {
+const Tab = createBottomTabNavigator();
+
+const App = () => {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: ({ focused, color, size }) => {
+              let iconName;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+              if (route.name === 'Accueil') {
+                iconName = focused ? 'home' : 'home-outline';
+              } else if (route.name === 'Calendrier') {
+                iconName = focused ? 'calendar' : 'calendar-outline';
+              }
+
+              return <Icon name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: '#4CAF50',
+            tabBarInactiveTintColor: 'gray',
+            headerStyle: {
+              backgroundColor: '#4CAF50',
+            },
+            headerTintColor: '#fff',
+          })}
+        >
+          <Tab.Screen name="Accueil" component={HomeScreen} />
+          <Tab.Screen name="Calendrier" component={CalendarScreen} />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </SafeAreaProvider>
+  );
+};
+
+export default App;
