@@ -76,13 +76,6 @@ const HomeScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Mascotte animée */}
-      <View style={styles.mascotContainer}>
-      <ExpoImage
-        source={require('../assets/images/mascot.gif')}
-        style={styles.mascotGif}
-        />
-      </View>
     </View>
   );
 };
