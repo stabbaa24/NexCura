@@ -1,43 +1,60 @@
-// CalendarScreen.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const CalendarScreen = () => {
   const [selectedDate, setSelectedDate] = useState('');
-  const [events, setEvents] = useState([
-    {
-      time: '08:00',
-      type: 'glucose',
-      value: '120 mg/dL',
-    },
-    {
-      time: '12:30',
-      type: 'meal',
-      value: 'Déjeuner - Salade César',
-    },
-    {
-      time: '14:00',
-      type: 'medication',
-      value: 'Metformine 500mg',
-    },
-  ]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const response = await fetch('http://192.168.1.16:5000/api/user/me', { // Remplace par ton IP locale
+          method: 'GET',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}` 
+          }
+        });
+
+        const data = await response.json();
+        console.log("📌 Données utilisateur :", data);
+
+        if (response.ok) {
+          const allEvents = [
+            ...(data.rendezVous || []).map(rdv => ({
+              date: rdv.date.split('T')[0],
+              time: rdv.date.split('T')[1]?.slice(0, 5) || "00:00",
+              type: 'appointment',
+              value: `${rdv.type} à ${rdv.lieu}`
+            }))
+          ];
+          setEvents(allEvents);
+        }
+      } catch (error) {
+        console.error("❌ Erreur récupération des événements :", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [selectedDate]);
 
   const renderEventIcon = (type) => {
     switch (type) {
-      case 'glucose':
-        return <Icon name="needle" size={24} color="#4CAF50" />;
-      case 'meal':
-        return <Icon name="food-apple" size={24} color="#4CAF50" />;
-      case 'medication':
-        return <Icon name="pill" size={24} color="#4CAF50" />;
+      case 'appointment':
+        return <Icon name="calendar" size={24} color="#4CAF50" />;
       default:
         return null;
     }
@@ -58,82 +75,31 @@ const CalendarScreen = () => {
       />
 
       <View style={styles.eventsContainer}>
-        <Text style={styles.eventsTitle}>Événements du jour</Text>
-        <ScrollView>
-          {events.map((event, index) => (
-            <View key={index} style={styles.eventCard}>
-              <View style={styles.eventTime}>
-                <Text style={styles.timeText}>{event.time}</Text>
-              </View>
-              <View style={styles.eventContent}>
-                {renderEventIcon(event.type)}
-                <Text style={styles.eventValue}>{event.value}</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      </View>
+        <Text style={styles.eventsTitle}>Événements du {selectedDate || "jour"}</Text>
 
-      <TouchableOpacity style={styles.addButton}>
-        <Icon name="plus" size={30} color="#fff" />
-      </TouchableOpacity>
+        {loading ? (
+          <ActivityIndicator size="large" color="#4CAF50" />
+        ) : (
+          <ScrollView>
+            {events.filter(e => e.date === selectedDate).map((event, index) => (
+              <View key={index} style={styles.eventCard}>
+                <View style={styles.eventTime}>
+                  <Text style={styles.timeText}>{event.time}</Text>
+                </View>
+                <View style={styles.eventContent}>
+                  {renderEventIcon(event.type)}
+                  <Text style={styles.eventValue}>{event.value}</Text>
+                </View>
+              </View>
+            ))}
+            {events.filter(e => e.date === selectedDate).length === 0 && (
+              <Text style={styles.noEvents}>Aucun événement ce jour-là</Text>
+            )}
+          </ScrollView>
+        )}
+      </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  eventsContainer: {
-    flex: 1,
-    padding: 16,
-  },
-  eventsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#333',
-  },
-  eventCard: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    elevation: 4,
-  },
-  eventTime: {
-    marginRight: 16,
-    justifyContent: 'center',
-  },
-  timeText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  eventContent: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  eventValue: {
-    marginLeft: 12,
-    fontSize: 16,
-    color: '#333',
-  },
-  addButton: {
-    position: 'absolute',
-    right: 16,
-    bottom: 16,
-    backgroundColor: '#4CAF50',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-  },
-});
 
 export default CalendarScreen;

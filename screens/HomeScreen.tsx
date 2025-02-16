@@ -1,45 +1,88 @@
-// HomeScreen.tsx
-import React, { useState } from 'react';
-import { Image as ExpoImage } from 'expo-image';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LineChart } from 'react-native-chart-kit';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const HomeScreen = () => {
-  const [currentGlucose, setCurrentGlucose] = useState(120);
-  const [lastMeal, setLastMeal] = useState('Il y a 2h');
+  const [userData, setUserData] = useState(null);
+  const [lastMeal, setLastMeal] = useState(null);
+  const [glucoseHistory, setGlucoseHistory] = useState([]);
+  const [glucoseLabels, setGlucoseLabels] = useState([]);
 
-  const glucoseData = {
-    labels: ['6h', '9h', '12h', '15h', '18h', '21h'],
-    datasets: [
-      {
-        data: [80, 120, 140, 110, 130, 120],
-      },
-    ],
-  };
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        const response = await fetch('http://192.168.1.16:5000/api/user/me', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        const data = await response.json();
+        console.log("📌 Données utilisateur :", data);
+
+        if (response.ok) {
+          setUserData(data);
+
+          // Trier et formater les glycémies
+          if (data.glycemie && data.glycemie.length > 0) {
+            const sortedGlycemie = data.glycemie.sort((a, b) => new Date(a.date) - new Date(b.date));
+            setGlucoseHistory(sortedGlycemie.map(g => g.valeur));
+            setGlucoseLabels(sortedGlycemie.map(g => {
+              const date = new Date(g.date);
+              return `${date.getHours()}h${date.getMinutes()}`;
+            }));
+          }
+
+          // Trier et afficher le dernier repas
+          if (data.repas && data.repas.length > 0) {
+            const sortedRepas = data.repas.sort((a, b) => new Date(b.date) - new Date(a.date));
+            setLastMeal(sortedRepas[0]);
+          }
+        }
+      } catch (error) {
+        console.error("❌ Erreur:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   return (
-    <View style={styles.mainContainer}>
-      <ScrollView style={styles.container}>
-        {/* Glucose actuel */}
-        <View style={styles.glucoseCard}>
-          <Text style={styles.cardTitle}>Glucose actuel</Text>
-          <Text style={styles.glucoseValue}>{currentGlucose} mg/dL</Text>
-          <Text style={styles.lastUpdate}>Dernière mise à jour: {lastMeal}</Text>
-        </View>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.userName}>
+          Bonjour {userData?.user?.nom || 'utilisateur'}
+        </Text>
+      </View>
 
-        {/* Graphique */}
-        <View style={styles.chartCard}>
-          <Text style={styles.cardTitle}>Évolution de la glycémie</Text>
+      {/* Dernier repas */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Dernier repas</Text>
+        {lastMeal ? (
+          <>
+            <Text style={styles.mealDescription}>{lastMeal.description}</Text>
+            <Text style={styles.mealInfo}>
+              {new Date(lastMeal.date).toLocaleTimeString()}
+            </Text>
+          </>
+        ) : (
+          <Text>Aucun repas enregistré</Text>
+        )}
+      </View>
+
+      {/* Graphique glycémie */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Glycémie</Text>
+        {glucoseHistory.length > 0 ? (
           <LineChart
-            data={glucoseData}
+            data={{
+              labels: glucoseLabels,
+              datasets: [{ data: glucoseHistory }]
+            }}
             width={350}
             height={200}
             chartConfig={{
@@ -47,113 +90,27 @@ const HomeScreen = () => {
               backgroundGradientFrom: '#ffffff',
               backgroundGradientTo: '#ffffff',
               decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-              style: {
-                borderRadius: 16,
-              },
+              color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`
             }}
-            bezier
             style={styles.chart}
           />
-        </View>
-
-        {/* Actions rapides */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Icon name="food-apple" size={30} color="#4CAF50" />
-            <Text style={styles.actionText}>Ajouter un repas</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Icon name="needle" size={30} color="#4CAF50" />
-            <Text style={styles.actionText}>Ajouter glycémie</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.actionButton}>
-            <Icon name="pill" size={30} color="#4CAF50" />
-            <Text style={styles.actionText}>Médicaments</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-    </View>
+        ) : (
+          <Text>Aucune donnée de glycémie</Text>
+        )}
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  mainContainer: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  glucoseCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 4,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  glucoseValue: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#4CAF50',
-    marginVertical: 8,
-  },
-  lastUpdate: {
-    color: '#666',
-    fontSize: 14,
-  },
-  chartCard: {
-    backgroundColor: '#fff',
-    margin: 16,
-    padding: 16,
-    borderRadius: 12,
-    elevation: 4,
-  },
-  chart: {
-    marginVertical: 8,
-    borderRadius: 16,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 16,
-    marginBottom: 100, // Ajouté pour éviter que le contenu ne soit caché derrière la mascotte
-  },
-  actionButton: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    elevation: 4,
-    width: '28%',
-  },
-  actionText: {
-    marginTop: 8,
-    color: '#333',
-    textAlign: 'center',
-  },
-  mascotContainer: {
-    position: 'absolute',
-    bottom: 16,
-    right: 16,
-    width: 100,
-    height: 100,
-    zIndex: 1,
-  },
-  mascotGif: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 50,
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: { padding: 16, backgroundColor: '#4CAF50' },
+  userName: { fontSize: 24, fontWeight: 'bold', color: '#ffffff' },
+  card: { backgroundColor: '#ffffff', margin: 16, padding: 16, borderRadius: 12, elevation: 4 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#333333', marginBottom: 8 },
+  mealDescription: { fontSize: 16, color: '#333333' },
+  mealInfo: { fontSize: 14, color: '#666666', marginTop: 4 },
+  chart: { marginVertical: 8, borderRadius: 16 }
 });
 
 export default HomeScreen;

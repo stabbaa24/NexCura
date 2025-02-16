@@ -53,9 +53,63 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 20 },
-  title: { fontSize: 24, textAlign: 'center', marginBottom: 20 },
-  input: { borderBottomWidth: 1, marginBottom: 20, padding: 10 },
-});
+    container: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+    },
+    eventsContainer: {
+      flex: 1,
+      padding: 16,
+      backgroundColor: '#fff',
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      marginTop: -20,
+    },
+    eventsTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 16,
+      color: '#333',
+    },
+    eventCard: {
+      flexDirection: 'row',
+      backgroundColor: '#fff',
+      padding: 12,
+      borderRadius: 8,
+      marginBottom: 8,
+      elevation: 2,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    },
+    eventTime: {
+      backgroundColor: '#4CAF50',
+      padding: 8,
+      borderRadius: 6,
+      marginRight: 12,
+      justifyContent: 'center',
+    },
+    timeText: {
+      color: '#fff',
+      fontWeight: 'bold',
+    },
+    eventContent: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    eventValue: {
+      marginLeft: 8,
+      fontSize: 16,
+      color: '#333',
+    },
+    noEvents: {
+      textAlign: 'center',
+      color: '#666',
+      marginTop: 20,
+      fontSize: 16,
+    }
+  });
 
 export default LoginScreen;

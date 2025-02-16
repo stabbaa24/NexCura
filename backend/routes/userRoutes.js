@@ -1,31 +1,33 @@
 const express = require('express');
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-
 const router = express.Router();
+const User = require('../models/User');
+const Glycemie = require('../models/Glycemie');
+const Repas = require('../models/Repas');
+const RendezVous = require('../models/RendezVous'); // Ajout du modèle
+const authenticate = require('../middleware/authMiddleware');
 
-// Middleware d'authentification
-const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization'];
-  if (!token) return res.status(403).json({ message: "Accès interdit" });
+const mongoose = require('mongoose');
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(401).json({ message: "Token invalide" });
-    req.userId = decoded.userId;
-    next();
-  });
-};
-
-// Récupérer les infos utilisateur
-router.get('/me', verifyToken, async (req, res) => {
+router.get('/me', authenticate, async (req, res) => {
   try {
-    const user = await User.findById(req.userId);
+    const user = await User.findById(req.user.userId);
     if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
 
-    res.json(user);
+    // Convertir userId en ObjectId pour que MongoDB le reconnaisse
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
+
+    const glycemie = await Glycemie.find({ user_id: userId }).sort({ date: 1 });
+    console.log("📊 Données glycémie récupérées :", glycemie);
+
+    const repas = await Repas.find({ user_id: userId }).sort({ date: 1 });
+    const rendezVous = await RendezVous.find({ user_id: userId }).sort({ date: 1 });
+
+    res.json({ user, glycemie, repas, rendezVous });
   } catch (error) {
+    console.error("❌ Erreur récupération utilisateur :", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 });
+
 
 module.exports = router;
