@@ -20,8 +20,7 @@ const MainApp = () => (
       },
       tabBarActiveTintColor: '#4CAF50',
       tabBarInactiveTintColor: 'gray',
-      headerStyle: { backgroundColor: '#4CAF50' },
-      headerTintColor: '#fff',
+      headerShown: false, // Supprime la top bar
     })}
   >
     <Tab.Screen name="Accueil" component={HomeScreen} />
