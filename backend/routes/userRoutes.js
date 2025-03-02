@@ -1,73 +1,73 @@
+
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Glycemie = require('../models/Glycemie');
-const Repas = require('../models/Repas');
 const RendezVous = require('../models/RendezVous');
-const authenticate = require('../middleware/authMiddleware');
-const mongoose = require('mongoose');
+const Medicament = require('../models/Medicaments');
+const auth = require('../middleware/authMiddleware'); // Using your existing middleware
 
-router.get('/me', authenticate, async (req, res) => {
+// Get user data
+router.get('/me', auth, async (req, res) => {
   try {
-    // Récupération de l'utilisateur
-    const user = await User.findById(req.user.userId);
-    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
-
-    console.log("Recherche glycémie pour user_id:", req.user.userId);
-
-    // Recherche dans la collection glycemie avec les deux formats possibles d'ID
-    const glycemieData = await mongoose.connection.db.collection('glycemie').find({
-      $or: [
-        { user_id: req.user.userId }, // Format string
-        { user_id: new mongoose.Types.ObjectId(req.user.userId) } // Format ObjectId
-      ]
-    }).toArray();
-
-    console.log("Nombre de glycémies trouvées:", glycemieData.length);
+    const user = await User.findById(req.user.userId).select('-mot_de_passe');
     
-    // Si on trouve des données, les trier par date
-    if (glycemieData.length > 0) {
-      glycemieData.sort((a, b) => new Date(b.date) - new Date(a.date));
-      console.log("Premier élément trouvé:", glycemieData[0]);
+    // Get user's glycemie data
+    const glycemie = await Glycemie.find({ user_id: req.user.userId })
+      .sort({ date: -1 })
+      .limit(20);
+    
+    // Get user's appointments
+    const rendezVous = await RendezVous.find({ user_id: req.user.userId })
+      .sort({ date: 1 });
+    
+    // Get user's medications
+    const medicaments = await Medicament.find({ user_id: req.user.userId });
+    
+    res.json({
+      ...user.toObject(),
+      glycemie,
+      rendezVous,
+      medicaments
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données utilisateur:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
+// Add a new appointment
+router.post('/rendezvous', auth, async (req, res) => {
+  try {
+    const { type, lieu, date, note, rappel } = req.body;
+    
+    // Validate required fields
+    if (!type || !lieu || !date) {
+      return res.status(400).json({ message: 'Type, lieu et date sont requis' });
     }
-
-    // Envoyer les données trouvées
-    res.json({
-      user,
-      glycemie: glycemieData,
-      repas: await Repas.find({ user_id: req.user.userId }),
-      rendezVous: await RendezVous.find({ user_id: req.user.userId })
-    });
-
-  } catch (error) {
-    console.error("❌ Erreur détaillée:", error);
-    res.status(500).json({ 
-      message: "Erreur serveur", 
-      error: error.message,
-      stack: error.stack 
-    });
-  }
-});
-
-// Route de debug pour vérifier un document glycémie spécifique
-router.get('/check-glycemie/:id', authenticate, async (req, res) => {
-  try {
-    const glycemie = await mongoose.connection.db.collection('glycemie').findOne({
-      _id: new mongoose.Types.ObjectId(req.params.id)
+    
+    const newRendezVous = new RendezVous({
+      user_id: req.user.userId,
+      type,
+      lieu,
+      date,
+      note: note || '',
+      rappel: rappel !== undefined ? rappel : true
     });
     
-    res.json({
-      found: !!glycemie,
-      data: glycemie,
-      userId: req.user.userId,
-      format: {
-        asString: req.user.userId,
-        asObjectId: new mongoose.Types.ObjectId(req.user.userId)
-      }
+    await newRendezVous.save();
+    
+    res.status(201).json({
+      message: 'Rendez-vous ajouté avec succès',
+      rendezVous: newRendezVous
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Erreur lors de l\'ajout du rendez-vous:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
+
+// Add more routes as needed
 
 module.exports = router;

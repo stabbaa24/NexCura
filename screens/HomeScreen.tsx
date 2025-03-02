@@ -139,7 +139,7 @@ const HomeScreen = () => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <Icon name="pill" size={24} color="#4CAF50" />
-            <Text style={styles.actionText}>Médicament</Text>
+            <Text style={styles.actionText}>Traitement</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
