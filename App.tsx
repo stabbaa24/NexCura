@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import HomeScreen from './screens/HomeScreen';
 import CalendarScreen from './screens/CalendarScreen';
+import EducationScreen from './screens/EducationScreen';
 import LoginScreen from './screens/LoginScreen';
 
 const Drawer = createDrawerNavigator();
@@ -20,8 +21,15 @@ const MainApp = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarIcon: ({ focused, color, size }) => {
-        let iconName = route.name === 'TabHome' ? 'home' : 'calendar';
-        return <Icon name={focused ? iconName : `${iconName}-outline`} size={size} color={color} />;
+        let iconName;
+        if (route.name === 'TabHome') {
+          iconName = focused ? 'home' : 'home-outline';
+        } else if (route.name === 'TabCalendar') {
+          iconName = focused ? 'calendar' : 'calendar-outline';
+        } else if (route.name === 'TabEducation') {
+          iconName = focused ? 'book-open-variant' : 'book-open-outline';
+        }
+        return <Icon name={iconName} size={size} color={color} />;
       },
       tabBarActiveTintColor: '#4CAF50',
       tabBarInactiveTintColor: 'gray',
@@ -37,6 +45,11 @@ const MainApp = () => (
       name="TabCalendar" 
       component={CalendarScreen} 
       options={{ tabBarLabel: 'Calendrier' }}
+    />
+    <Tab.Screen 
+      name="TabEducation" 
+      component={EducationScreen} 
+      options={{ tabBarLabel: 'Éducation' }}
     />
   </Tab.Navigator>
 );
@@ -94,6 +107,14 @@ const DrawerNavigator = () => {
         options={{
           title: 'Calendrier',
           drawerIcon: ({ color, size }) => <Icon name="calendar" size={size} color={color} />,
+        }}
+      />
+      <Drawer.Screen
+        name="DrawerEducation"
+        component={EducationScreen}
+        options={{
+          title: 'Éducation Santé',
+          drawerIcon: ({ color, size }) => <Icon name="book-open-variant" size={size} color={color} />,
         }}
       />
       {/* Ajout du bouton de déconnexion */}

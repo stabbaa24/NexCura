@@ -111,7 +111,7 @@ const CalendarScreen = () => {
         
         // Add dot based on event type if not already present
         // Changement des couleurs: bleu pour rendez-vous, vert pour traitements
-        const dotColor = event.type === 'appointment' ? '#2196F3' : '#4CAF50';
+        const dotColor = event.type === 'appointment' ? '#689D71' : '#4CAF50';
         const existingDotIndex = marks[event.date].dots.findIndex(dot => dot.color === dotColor);
         
         if (existingDotIndex === -1) {
@@ -160,7 +160,7 @@ const CalendarScreen = () => {
       updatedMarks[newSelectedDate] = {
         ...(updatedMarks[newSelectedDate] || {}),
         selected: true,
-        selectedColor: '#2196F3'
+        selectedColor: '#689D71'
       };
       
       return updatedMarks;
@@ -271,10 +271,10 @@ const CalendarScreen = () => {
         markedDates={markedDates}
         markingType={'multi-dot'}
         theme={{
-          todayTextColor: '#2196F3',
-          arrowColor: '#2196F3',
-          dotColor: '#2196F3',
-          selectedDayBackgroundColor: '#2196F3',
+          todayTextColor: '#689D71',
+          arrowColor: '#689D71',
+          dotColor: '#689D71',
+          selectedDayBackgroundColor: '#689D71',
         }}
       />
 
@@ -292,7 +292,7 @@ const CalendarScreen = () => {
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color="#2196F3" />
+          <ActivityIndicator size="large" color="#689D71" />
         ) : (
           <ScrollView>
             {events
@@ -302,7 +302,7 @@ const CalendarScreen = () => {
                 <View key={index} style={styles.eventCard}>
                   <View style={[
                     styles.eventTime, 
-                    { backgroundColor: event.type === 'appointment' ? '#2196F3' : '#4CAF50' }
+                    { backgroundColor: event.type === 'appointment' ? '#689D71' : '#4CAF50' }
                   ]}>
                     <Text style={styles.timeText}>{event.time}</Text>
                   </View>
@@ -360,7 +360,7 @@ const CalendarScreen = () => {
                 onPress={() => setShowDatePicker(true)}
               >
                 <Text>{appointmentDate.toLocaleDateString('fr-FR')}</Text>
-                <Icon name="calendar" size={20} color="#2196F3" />
+                <Icon name="calendar" size={20} color="#689D71" />
               </TouchableOpacity>
               {showDatePicker && (
                 <DateTimePicker
@@ -379,7 +379,7 @@ const CalendarScreen = () => {
                 onPress={() => setShowTimePicker(true)}
               >
                 <Text>{appointmentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</Text>
-                <Icon name="clock-outline" size={20} color="#2196F3" />
+                <Icon name="clock-outline" size={20} color="#689D71" />
               </TouchableOpacity>
               {showTimePicker && (
                 <DateTimePicker
@@ -447,10 +447,10 @@ const styles = StyleSheet.create({
   eventsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#3333',
+    color: '#000000',
   },
   addButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#689D71',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   eventTime: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#689D71',
     padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
   },
   eventValue: {
     fontSize: 16,
-    color: '#3333',
+    color: '#000000',
     fontWeight: '500',
   },
   eventNote: {
@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#3333',
+    color: '#000000',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -530,7 +530,7 @@ const styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    color: '#3333',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -571,11 +571,11 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   saveButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#689D71',
     marginLeft: 10,
   },
   cancelButtonText: {
-    color: '#3333',
+    color: '#000000',
     fontWeight: 'bold',
   },
   saveButtonText: {
