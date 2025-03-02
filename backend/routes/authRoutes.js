@@ -1,63 +1,88 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
+const router = express.Router();
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const router = express.Router();
-
-// Inscription
+// Route d'inscription
 router.post('/register', async (req, res) => {
   try {
-    const { nom, email, mot_de_passe, type_diabete, taille, poids, objectif_glycemie } = req.body;
-
-    const userExists = await User.findOne({ email });
-    if (userExists) return res.status(400).json({ message: "Utilisateur déjà existant" });
-
+    const { nom, email, mot_de_passe, type_diabete } = req.body;
+    
+    // Vérifier si l'utilisateur existe déjà
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Cet email est déjà utilisé' });
+    }
+    
+    // Hasher le mot de passe
     const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
+    
+    // Créer un nouvel utilisateur
     const newUser = new User({
-      nom, email, mot_de_passe: hashedPassword, type_diabete, taille, poids, objectif_glycemie
+      nom,
+      email,
+      mot_de_passe: hashedPassword,
+      type_diabete
     });
-
+    
     await newUser.save();
-    res.status(201).json({ message: "Inscription réussie !" });
+    
+    // Générer un token JWT
+    const token = jwt.sign(
+      { userId: newUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    res.status(201).json({ 
+      message: 'Utilisateur créé avec succès',
+      token
+    });
   } catch (error) {
-    res.status(500).json({ message: "Erreur serveur" });
+    console.error('Erreur lors de l\'inscription:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-// Connexion
+// Route de connexion
 router.post('/login', async (req, res) => {
-    try {
-      console.log("🔍 Tentative de connexion avec email :", req.body.email);
-  
-      const email = req.body.email.trim(); // Nettoie les espaces
-      const user = await User.findOne({ email });
-  
-      console.log("✅ Résultat de la recherche :", user);
-  
-      if (!user) {
-        console.log("❌ Utilisateur non trouvé !");
-        return res.status(400).json({ message: "Utilisateur non trouvé" });
-      }
-  
-      // Vérification du mot de passe
-      const isMatch = await bcrypt.compare(req.body.mot_de_passe, user.mot_de_passe);
-      if (!isMatch) {
-        console.log("❌ Mot de passe incorrect !");
-        return res.status(400).json({ message: "Mot de passe incorrect" });
-      }
-  
-      // Génération du token
-      const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  
-      console.log("✅ Connexion réussie !");
-      res.json({ token, user });
-  
-    } catch (error) {
-      console.error("❌ Erreur serveur :", error);
-      res.status(500).json({ message: "Erreur serveur" });
+  try {
+    const { email, mot_de_passe } = req.body;
+    
+    // Trouver l'utilisateur par email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
     }
-  });
-  
+    
+    // Vérifier le mot de passe
+    const isPasswordValid = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+    }
+    
+    // Générer un token JWT
+    const token = jwt.sign(
+      { userId: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+    
+    res.json({ 
+      message: 'Connexion réussie',
+      token,
+      user: {
+        id: user._id,
+        nom: user.nom,
+        email: user.email,
+        type_diabete: user.type_diabete
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la connexion:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
 
 module.exports = router;

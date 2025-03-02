@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const GlycemieSchema = new mongoose.Schema({
   user_id: {
-    type: String,
+    type: mongoose.Schema.Types.Mixed, // Allow both String and ObjectId
     required: true,
     index: true
   },
@@ -30,7 +30,7 @@ const GlycemieSchema = new mongoose.Schema({
   }
 });
 
-// Vérification du nom de la collection - Changement du nom de la collection
+// Ensure we're using the correct collection name
 const Glycemie = mongoose.model('Glycemie', GlycemieSchema, 'glycemie');
 
 module.exports = Glycemie;

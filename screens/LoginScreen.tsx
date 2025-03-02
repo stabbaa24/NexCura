@@ -1,115 +1,243 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
     try {
-      const response = await fetch('http://192.168.1.16:5000/api/auth/login', { // Remplace 192.168.X.X par ton IP locale
+      setLoading(true);
+      
+      // Use the correct IP address for your environment
+      // For Android emulator, use 10.0.2.2
+      // For iOS simulator, use localhost
+      // For physical device, use your computer's actual IP on the network
+      const apiUrl = 'http://192.168.91.150:5000/api/auth/login';
+      
+      console.log('Connecting to:', apiUrl);
+      console.log('Login attempt with email:', email);
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, mot_de_passe: password }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          mot_de_passe: password,
+        }),
       });
-
+      
       const data = await response.json();
-      console.log("📌 Réponse API :", data);  // Ajout d'un log pour voir la réponse
-
-      if (response.ok) {
-        await AsyncStorage.setItem('token', data.token);
-        console.log("✅ Token stocké avec succès !");
-        navigation.replace('HomeScreen'); // Redirection après connexion
-      } else {
-        Alert.alert('Erreur', data.message);
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Erreur de connexion');
       }
+      
+      // Store the token
+      await AsyncStorage.setItem('token', data.token);
+      console.log('Login successful, token stored');
+      
+      // Force refresh the app to trigger the authentication check
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'MainApp' }],
+      });
     } catch (error) {
-      Alert.alert('Erreur', 'Connexion impossible');
-      console.error("❌ Erreur de connexion :", error);
+      console.error('❌ Erreur de connexion :', error);
+      Alert.alert('Erreur', 'Identifiants incorrects ou serveur indisponible');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Connexion</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Mot de passe"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-      />
-      <Button title="Se connecter" onPress={handleLogin} />
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoText}>NexCura</Text>
+          <Text style={styles.tagline}>Votre compagnon de santé</Text>
+        </View>
+
+        <View style={styles.formContainer}>
+          <Text style={styles.title}>Connexion</Text>
+          
+          <View style={styles.inputContainer}>
+            <Icon name="email-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+          </View>
+          
+          <View style={styles.inputContainer}>
+            <Icon name="lock-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Mot de passe"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+            />
+            <TouchableOpacity 
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              <Icon 
+                name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                size={20} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <TouchableOpacity style={styles.forgotPassword}>
+            <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.loginButton} 
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.loginButtonText}>Se connecter</Text>
+            )}
+          </TouchableOpacity>
+          
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>Vous n'avez pas de compte ? </Text>
+            <TouchableOpacity>
+              <Text style={styles.registerLink}>S'inscrire</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#f5f5f5',
-    },
-    eventsContainer: {
-      flex: 1,
-      padding: 16,
-      backgroundColor: '#fff',
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      marginTop: -20,
-    },
-    eventsTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      marginBottom: 16,
-      color: '#333',
-    },
-    eventCard: {
-      flexDirection: 'row',
-      backgroundColor: '#fff',
-      padding: 12,
-      borderRadius: 8,
-      marginBottom: 8,
-      elevation: 2,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-    },
-    eventTime: {
-      backgroundColor: '#4CAF50',
-      padding: 8,
-      borderRadius: 6,
-      marginRight: 12,
-      justifyContent: 'center',
-    },
-    timeText: {
-      color: '#fff',
-      fontWeight: 'bold',
-    },
-    eventContent: {
-      flex: 1,
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    eventValue: {
-      marginLeft: 8,
-      fontSize: 16,
-      color: '#333',
-    },
-    noEvents: {
-      textAlign: 'center',
-      color: '#666',
-      marginTop: 20,
-      fontSize: 16,
-    }
-  });
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoText: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+  },
+  tagline: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 5,
+  },
+  formContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+    marginBottom: 20,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    color: '#333',
+  },
+  eyeIcon: {
+    padding: 5,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: '#4CAF50',
+    fontSize: 14,
+  },
+  loginButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 5,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  registerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  registerText: {
+    color: '#666',
+  },
+  registerLink: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
+  },
+});
 
 export default LoginScreen;
