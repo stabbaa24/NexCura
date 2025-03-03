@@ -6,8 +6,9 @@ const User = require('../models/User');
 const Glycemie = require('../models/Glycemie');
 const RendezVous = require('../models/RendezVous');
 const Medicament = require('../models/Medicaments');
-const auth = require('../middleware/authMiddleware'); // Using your existing middleware
+const auth = require('../middleware/authMiddleware'); 
 
+// Get user data
 // Get user data
 router.get('/me', auth, async (req, res) => {
   try {
@@ -16,28 +17,14 @@ router.get('/me', auth, async (req, res) => {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
 
-    // Convertir l'ID utilisateur en ObjectId pour la compatibilité
-    // Utiliser new pour créer un ObjectId correctement
-    const userId = new mongoose.Types.ObjectId(req.user.userId);
-    
-    console.log('Recherche de glycémie pour userId:', req.user.userId);
-    console.log('Format ObjectId:', userId);
-    
-    // Get user's glycemie data - recherche avec deux formats possibles d'ID
-    const glycemie = await Glycemie.find({
-      $or: [
-        { user_id: req.user.userId }, // Format string
-        { user_id: userId }           // Format ObjectId
-      ]
-    })
-    .sort({ date: -1 })
-    .limit(20);
-
-    console.log(`Glycémie trouvée pour l'utilisateur ${req.user.userId}:`, glycemie.length);
+    // Get user's glycemie data
+    const glycemie = await Glycemie.find({ user_id: req.user.userId })
+      .sort({ date: -1 })
+      .limit(20);
 
     // Get user's appointments
     const rendezVous = await RendezVous.find({ user_id: req.user.userId })
-    .sort({ date: 1 });
+      .sort({ date: 1 });
 
     // Get user's medications
     const medicaments = await Medicament.find({ user_id: req.user.userId });
