@@ -23,14 +23,7 @@ const HomeScreen = () => {
       try {
         setLoading(true);
         const token = await AsyncStorage.getItem('token');
-        
-        // Use localhost for emulator or your actual IP address
-        // For Android emulator, use 10.0.2.2 instead of localhost
-        // For iOS simulator, use localhost
-        // For physical device, use your computer's actual IP on the network
-        const apiUrl = 'http://192.168.91.150:5000/api/user/me'; // Android emulator
-        // const apiUrl = 'http://localhost:5000/api/user/me'; // iOS simulator
-        // const apiUrl = 'http://YOUR_ACTUAL_IP:5000/api/user/me'; // Physical device
+        const apiUrl = 'https://nexcura.onrender.com/api/user/me';
         
         console.log('Fetching from:', apiUrl);
         

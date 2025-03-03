@@ -52,8 +52,7 @@ const CalendarScreen = () => {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
       
-      // API URL for user data
-      const apiUrl = 'http://192.168.91.150:5000/api/user/me';
+      const apiUrl = 'https://nexcura.onrender.com/api/user/me';
       
       console.log('Fetching calendar data from:', apiUrl);
       
@@ -193,7 +192,7 @@ const CalendarScreen = () => {
       dateObj.setMinutes(timeObj.getMinutes());
       
       // Make sure we're using the correct API endpoint
-      const apiUrl = 'http://192.168.91.150:5000/api/rendezvous';
+      const apiUrl = 'https://nexcura.onrender.com/api/rendezvous';
       
       console.log('Sending appointment data:', {
         type: appointmentType,

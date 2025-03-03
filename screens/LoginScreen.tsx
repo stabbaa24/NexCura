@@ -29,11 +29,7 @@ const LoginScreen = ({ navigation }) => {
     try {
       setLoading(true);
       
-      // Use the correct IP address for your environment
-      // For Android emulator, use 10.0.2.2
-      // For iOS simulator, use localhost
-      // For physical device, use your computer's actual IP on the network
-      const apiUrl = 'http://192.168.91.150:5000/api/auth/login';
+      const apiUrl = 'https://nexcura.onrender.com/api/auth/login';
       
       console.log('Connecting to:', apiUrl);
       console.log('Login attempt with email:', email);
