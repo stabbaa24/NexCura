@@ -1,3 +1,4 @@
+
 const mongoose = require('mongoose');
 
 const GlycemieSchema = new mongoose.Schema({
@@ -28,6 +29,11 @@ const GlycemieSchema = new mongoose.Schema({
   commentaire: { 
     type: String 
   }
+});
+
+// Ajout d'un hook pre-find pour gérer les conversions d'ID si nécessaire
+GlycemieSchema.pre('find', function() {
+  console.log('Exécution de la requête Glycemie.find avec les critères:', this.getQuery());
 });
 
 // Ensure we're using the correct collection name
