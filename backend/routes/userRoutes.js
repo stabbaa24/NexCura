@@ -17,7 +17,11 @@ router.get('/me', auth, async (req, res) => {
     }
 
     // Convertir l'ID utilisateur en ObjectId pour la compatibilité
-    const userId = mongoose.Types.ObjectId(req.user.userId);
+    // Utiliser new pour créer un ObjectId correctement
+    const userId = new mongoose.Types.ObjectId(req.user.userId);
+    
+    console.log('Recherche de glycémie pour userId:', req.user.userId);
+    console.log('Format ObjectId:', userId);
     
     // Get user's glycemie data - recherche avec deux formats possibles d'ID
     const glycemie = await Glycemie.find({
