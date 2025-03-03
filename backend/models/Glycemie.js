@@ -1,9 +1,8 @@
-
 const mongoose = require('mongoose');
 
 const GlycemieSchema = new mongoose.Schema({
   user_id: {
-    type: mongoose.Schema.Types.Mixed, // Allow both String and ObjectId
+    type: mongoose.Schema.Types.Mixed, // Accepte à la fois String et ObjectId
     required: true,
     index: true
   },
@@ -31,12 +30,7 @@ const GlycemieSchema = new mongoose.Schema({
   }
 });
 
-// Ajout d'un hook pre-find pour gérer les conversions d'ID si nécessaire
-GlycemieSchema.pre('find', function() {
-  console.log('Exécution de la requête Glycemie.find avec les critères:', this.getQuery());
-});
-
-// Ensure we're using the correct collection name
+// Assurez-vous d'utiliser le bon nom de collection
 const Glycemie = mongoose.model('Glycemie', GlycemieSchema, 'glycemie');
 
 module.exports = Glycemie;
