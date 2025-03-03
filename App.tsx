@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -11,6 +11,7 @@ import HomeScreen from './screens/HomeScreen';
 import CalendarScreen from './screens/CalendarScreen';
 import EducationScreen from './screens/EducationScreen';
 import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -33,114 +34,118 @@ const MainApp = () => (
       },
       tabBarActiveTintColor: '#4CAF50',
       tabBarInactiveTintColor: 'gray',
-      headerShown: false, // Supprime la top bar
+      headerShown: false,
     })}
   >
-    <Tab.Screen 
-      name="TabHome" 
-      component={HomeScreen} 
-      options={{ tabBarLabel: 'Accueil' }} 
-    />
-    <Tab.Screen 
-      name="TabCalendar" 
-      component={CalendarScreen} 
-      options={{ tabBarLabel: 'Calendrier' }}
-    />
-    <Tab.Screen 
-      name="TabEducation" 
-      component={EducationScreen} 
-      options={{ tabBarLabel: 'Éducation' }}
-    />
+    <Tab.Screen name="TabHome" component={HomeScreen} options={{ tabBarLabel: 'Accueil' }} />
+    <Tab.Screen name="TabCalendar" component={CalendarScreen} options={{ tabBarLabel: 'Calendrier' }} />
+    <Tab.Screen name="TabEducation" component={EducationScreen} options={{ tabBarLabel: 'Éducation' }} />
   </Tab.Navigator>
 );
 
-// Composant vide pour la déconnexion
-const LogoutScreen = ({ navigation }) => {
+// Composant de déconnexion modifié
+const LogoutScreen = () => {
   useEffect(() => {
     const logout = async () => {
       try {
         await AsyncStorage.removeItem('token');
-        // Force refresh of the app state
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Login' }],
-        });
+        // Utiliser la fonction globale pour mettre à jour l'état d'authentification
+        if (global.setIsAuthenticated) {
+          global.setIsAuthenticated(false);
+        }
       } catch (error) {
         console.error('Erreur lors de la déconnexion :', error);
       }
     };
-    
+
     logout();
   }, []);
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={styles.center}>
       <Text>Déconnexion en cours...</Text>
     </View>
   );
 };
 
-// Navigation par tiroir (sidenav)
-const DrawerNavigator = () => {
-  return (
-    <Drawer.Navigator
-      screenOptions={{
-        drawerStyle: {
-          backgroundColor: '#f5f5f5',
-          width: 240,
-        },
-        drawerActiveTintColor: '#4CAF50',
-        drawerInactiveTintColor: 'gray',
+// Navigation par tiroir
+const DrawerNavigator = () => (
+  <Drawer.Navigator
+    screenOptions={{
+      drawerStyle: {
+        backgroundColor: '#f5f5f5',
+        width: 240,
+      },
+      drawerActiveTintColor: '#4CAF50',
+      drawerInactiveTintColor: 'gray',
+    }}
+  >
+    <Drawer.Screen
+      name="DrawerHome"
+      component={MainApp}
+      options={{
+        title: 'Accueil',
+        drawerIcon: ({ color, size }) => <Icon name="home" size={size} color={color} />,
       }}
-    >
-      <Drawer.Screen
-        name="DrawerHome"
-        component={MainApp}
-        options={{
-          title: 'Accueil',
-          drawerIcon: ({ color, size }) => <Icon name="home" size={size} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="DrawerCalendar"
-        component={CalendarScreen}
-        options={{
-          title: 'Calendrier',
-          drawerIcon: ({ color, size }) => <Icon name="calendar" size={size} color={color} />,
-        }}
-      />
-      <Drawer.Screen
-        name="DrawerEducation"
-        component={EducationScreen}
-        options={{
-          title: 'Éducation Santé',
-          drawerIcon: ({ color, size }) => <Icon name="book-open-variant" size={size} color={color} />,
-        }}
-      />
-      {/* Ajout du bouton de déconnexion */}
-      <Drawer.Screen
-        name="Logout"
-        component={LogoutScreen}
-        options={{
-          title: 'Déconnexion',
-          drawerIcon: ({ color, size }) => <Icon name="logout" size={size} color={color} />,
-        }}
-      />
-    </Drawer.Navigator>
-  );
-};
+    />
+    <Drawer.Screen
+      name="DrawerCalendar"
+      component={CalendarScreen}
+      options={{
+        title: 'Calendrier',
+        drawerIcon: ({ color, size }) => <Icon name="calendar" size={size} color={color} />,
+      }}
+    />
+    <Drawer.Screen
+      name="DrawerEducation"
+      component={EducationScreen}
+      options={{
+        title: 'Éducation Santé',
+        drawerIcon: ({ color, size }) => <Icon name="book-open-variant" size={size} color={color} />,
+      }}
+    />
+    <Drawer.Screen
+      name="Logout"
+      component={LogoutScreen}
+      options={{
+        title: 'Déconnexion',
+        drawerIcon: ({ color, size }) => <Icon name="logout" size={size} color={color} />,
+      }}
+    />
+  </Drawer.Navigator>
+);
+
+// Navigateur d'authentification
+const AuthNavigator = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Register" component={RegisterScreen} />
+  </Stack.Navigator>
+);
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Exposer setIsAuthenticated globalement
+  global.setIsAuthenticated = setIsAuthenticated;
 
   useEffect(() => {
     const checkLogin = async () => {
       const token = await AsyncStorage.getItem('token');
-      console.log("📌 Token récupéré :", token);
       setIsAuthenticated(!!token);
+      setLoading(false);
     };
     checkLogin();
   }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <Text>Chargement...</Text>
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -148,11 +153,19 @@ const App = () => {
         {isAuthenticated ? (
           <Stack.Screen name="MainApp" component={DrawerNavigator} />
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Auth" component={AuthNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
 
 export default App;

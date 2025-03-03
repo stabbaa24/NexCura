@@ -14,26 +14,42 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Picker } from '@react-native-picker/picker';
 
-const LoginScreen = ({ navigation }) => {
+const RegisterScreen = ({ navigation }) => {
+  const [nom, setNom] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [typeDiabete, setTypeDiabete] = useState('Type 1');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleRegister = async () => {
+    // Validation des champs
+    if (!nom || !email || !password || !confirmPassword) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
     try {
       setLoading(true);
       
-      const apiUrl = 'https://nexcura.onrender.com/api/auth/login';
+      const apiUrl = 'https://nexcura.onrender.com/api/auth/register';
       
       console.log('Connecting to:', apiUrl);
-      console.log('Login attempt with email:', email);
+      console.log('Register attempt with email:', email);
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -41,32 +57,43 @@ const LoginScreen = ({ navigation }) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          nom,
           email,
           mot_de_passe: password,
+          type_diabete: typeDiabete
         }),
       });
       
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Erreur de connexion');
+        throw new Error(data.message || 'Erreur lors de l\'inscription');
       }
       
-      // Store the token
+      // Stocker le token
       await AsyncStorage.setItem('token', data.token);
-      console.log('Login successful, token stored');
       
-      // Modification ici: au lieu d'utiliser navigation.reset, on utilise la fonction globale
-      // pour mettre à jour l'état d'authentification dans App.tsx
+      // Deux options:
+      // 1. Rediriger vers la page principale si on veut connecter directement
       if (global.setIsAuthenticated) {
         global.setIsAuthenticated(true);
       } else {
-        // Fallback si la fonction globale n'est pas disponible
-        Alert.alert('Succès', 'Connexion réussie. Veuillez redémarrer l\'application.');
+        // 2. Rediriger vers la page de connexion si on préfère que l'utilisateur se connecte
+        Alert.alert(
+          'Succès', 
+          'Votre compte a été créé avec succès !',
+          [
+            { 
+              text: 'Se connecter', 
+              onPress: () => navigation.navigate('Login') 
+            }
+          ]
+        );
       }
+      
     } catch (error) {
-      console.error('❌ Erreur de connexion :', error);
-      Alert.alert('Erreur', 'Identifiants incorrects ou serveur indisponible');
+      console.error('❌ Erreur d\'inscription :', error);
+      Alert.alert('Erreur', error.message || 'Une erreur est survenue lors de l\'inscription');
     } finally {
       setLoading(false);
     }
@@ -84,7 +111,17 @@ const LoginScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.formContainer}>
-          <Text style={styles.title}>Connexion</Text>
+          <Text style={styles.title}>Inscription</Text>
+          
+          <View style={styles.inputContainer}>
+            <Icon name="account-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Nom complet"
+              value={nom}
+              onChangeText={setNom}
+            />
+          </View>
           
           <View style={styles.inputContainer}>
             <Icon name="email-outline" size={20} color="#666" style={styles.inputIcon} />
@@ -119,26 +156,57 @@ const LoginScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
-          </TouchableOpacity>
+          <View style={styles.inputContainer}>
+            <Icon name="lock-check-outline" size={20} color="#666" style={styles.inputIcon} />
+            <TextInput
+              style={styles.input}
+              placeholder="Confirmer le mot de passe"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showConfirmPassword}
+            />
+            <TouchableOpacity 
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              style={styles.eyeIcon}
+            >
+              <Icon 
+                name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
+                size={20} 
+                color="#666" 
+              />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.pickerContainer}>
+            <Text style={styles.pickerLabel}>Type de diabète :</Text>
+            <Picker
+              selectedValue={typeDiabete}
+              style={styles.picker}
+              onValueChange={(itemValue) => setTypeDiabete(itemValue)}
+            >
+              <Picker.Item label="Type 1" value="Type 1" />
+              <Picker.Item label="Type 2" value="Type 2" />
+              <Picker.Item label="Gestationnel" value="Gestationnel" />
+              <Picker.Item label="Autre" value="Autre" />
+            </Picker>
+          </View>
           
           <TouchableOpacity 
-            style={styles.loginButton} 
-            onPress={handleLogin}
+            style={styles.registerButton} 
+            onPress={handleRegister}
             disabled={loading}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.loginButtonText}>Se connecter</Text>
+              <Text style={styles.registerButtonText}>S'inscrire</Text>
             )}
           </TouchableOpacity>
           
-          <View style={styles.registerContainer}>
-            <Text style={styles.registerText}>Vous n'avez pas de compte ? </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.registerLink}>S'inscrire</Text>
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Vous avez déjà un compte ? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.loginLink}>Se connecter</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -159,7 +227,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
   },
   logoText: {
     fontSize: 36,
@@ -206,15 +274,21 @@ const styles = StyleSheet.create({
   eyeIcon: {
     padding: 5,
   },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+  pickerContainer: {
     marginBottom: 20,
   },
-  forgotPasswordText: {
-    color: '#4CAF50',
-    fontSize: 14,
+  pickerLabel: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 5,
   },
-  loginButton: {
+  picker: {
+    height: 50,
+    width: '100%',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 5,
+  },
+  registerButton: {
     backgroundColor: '#4CAF50',
     borderRadius: 5,
     height: 50,
@@ -222,22 +296,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  loginButtonText: {
+  registerButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  registerContainer: {
+  loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
   },
-  registerText: {
+  loginText: {
     color: '#666',
   },
-  registerLink: {
+  loginLink: {
     color: '#4CAF50',
     fontWeight: 'bold',
   },
 });
 
-export default LoginScreen;
+export default RegisterScreen;

@@ -9,27 +9,31 @@ const Medicament = require('../models/Medicaments');
 const auth = require('../middleware/authMiddleware'); // Using your existing middleware
 
 // Get user data
+// Get user data
 router.get('/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId).select('-mot_de_passe');
-    
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
     // Get user's glycemie data
     const glycemie = await Glycemie.find({ user_id: req.user.userId })
       .sort({ date: -1 })
       .limit(20);
-    
+
     // Get user's appointments
     const rendezVous = await RendezVous.find({ user_id: req.user.userId })
       .sort({ date: 1 });
-    
+
     // Get user's medications
     const medicaments = await Medicament.find({ user_id: req.user.userId });
-    
+
     res.json({
       ...user.toObject(),
       glycemie,
       rendezVous,
-      medicaments
+      medicaments,
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des données utilisateur:', error);
