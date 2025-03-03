@@ -1,168 +1,372 @@
-
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Dimensions
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
+const cardWidth = width * 0.9;
 
 const EducationScreen = () => {
-  const [activeCategory, setActiveCategory] = useState('diabete');
+  const [activeTab, setActiveTab] = useState('diabete');
 
-  const categories = [
-    { id: 'diabete', title: 'Diabète', icon: 'diabetes' },
-    { id: 'alimentation', title: 'Alimentation', icon: 'food-apple' },
-    { id: 'activite', title: 'Activité physique', icon: 'run' },
-    { id: 'medicaments', title: 'Médicaments', icon: 'pill' }
-  ];
+  const renderDiabeteContent = () => (
+    <ScrollView style={styles.contentContainer}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Qu'est-ce que le diabète ?</Text>
+        <Text style={styles.cardText}>
+          Le diabète est une maladie chronique qui se caractérise par un niveau élevé de sucre dans le sang.
+        </Text>
+      </View>
 
-  const articles = {
-    diabete: [
-      {
-        id: 1,
-        title: 'Comprendre le diabète',
-        summary: 'Le diabète est une maladie chronique qui survient lorsque le pancréas ne produit pas assez d\'insuline ou lorsque l\'organisme n\'utilise pas correctement l\'insuline qu\'il produit.',
-        content: 'Le diabète est une maladie chronique caractérisée par un taux élevé de sucre dans le sang (hyperglycémie). Il existe principalement deux types de diabète :\n\n• Le diabète de type 1 : le corps ne produit pas d\'insuline. C\'est une maladie auto-immune où le système immunitaire attaque les cellules du pancréas qui produisent l\'insuline.\n\n• Le diabète de type 2 : le corps ne produit pas assez d\'insuline ou les cellules résistent à l\'action de l\'insuline. C\'est le type le plus courant et il est souvent lié au mode de vie.',
-        image: 'https://www.example.com/diabetes.jpg'
-      },
-      {
-        id: 2,
-        title: 'Symptômes du diabète',
-        summary: 'Reconnaître les signes avant-coureurs du diabète peut aider à un diagnostic précoce et à une meilleure prise en charge.',
-        content: 'Les symptômes courants du diabète comprennent :\n\n• Soif excessive et bouche sèche\n• Mictions fréquentes\n• Fatigue intense\n• Faim constante\n• Perte de poids inexpliquée\n• Vision floue\n• Plaies qui guérissent lentement\n\nSi vous présentez ces symptômes, consultez un professionnel de santé pour un diagnostic.',
-        image: 'https://www.example.com/symptoms.jpg'
-      },
-      {
-        id: 3,
-        title: 'Surveillance de la glycémie',
-        summary: 'Apprendre à surveiller votre taux de sucre dans le sang est essentiel pour gérer efficacement le diabète.',
-        content: 'La surveillance régulière de votre glycémie vous aide à comprendre comment votre corps réagit à la nourriture, à l\'activité physique et aux médicaments. Voici quelques conseils :\n\n• Utilisez un glucomètre pour mesurer votre glycémie\n• Tenez un journal de vos mesures\n• Apprenez à reconnaître les signes d\'hypoglycémie (taux de sucre trop bas) et d\'hyperglycémie (taux de sucre trop élevé)\n• Consultez régulièrement votre médecin pour ajuster votre traitement si nécessaire',
-        image: 'https://www.example.com/monitoring.jpg'
-      }
-    ],
-    alimentation: [
-      {
-        id: 4,
-        title: 'Alimentation équilibrée',
-        summary: 'Une alimentation équilibrée est essentielle pour gérer le diabète et maintenir une glycémie stable.',
-        content: 'Pour les personnes diabétiques, il est important de :\n\n• Privilégier les aliments à faible indice glycémique\n• Consommer des fibres (légumes, fruits entiers, légumineuses)\n• Limiter les sucres ajoutés et les glucides raffinés\n• Répartir les repas tout au long de la journée\n• Contrôler les portions\n\nUn diététicien peut vous aider à élaborer un plan alimentaire adapté à vos besoins.',
-        image: 'https://www.example.com/healthy-eating.jpg'
-      },
-      {
-        id: 5,
-        title: 'Comprendre l\'indice glycémique',
-        summary: 'L\'indice glycémique (IG) mesure l\'impact des aliments sur la glycémie. Apprendre à choisir des aliments à faible IG peut aider à contrôler le diabète.',
-        content: 'L\'indice glycémique classe les aliments selon leur effet sur la glycémie :\n\n• IG bas (moins de 55) : la plupart des fruits et légumes, légumineuses, produits laitiers, pain complet\n• IG moyen (56-69) : riz brun, couscous, pain de seigle\n• IG élevé (70 et plus) : pain blanc, riz blanc, pommes de terre, sucreries\n\nPrivilégiez les aliments à IG bas pour maintenir une glycémie stable.',
-        image: 'https://www.example.com/glycemic-index.jpg'
-      }
-    ],
-    activite: [
-      {
-        id: 6,
-        title: 'Bienfaits de l\'activité physique',
-        summary: 'L\'exercice régulier aide à améliorer la sensibilité à l\'insuline et à maintenir un poids santé.',
-        content: 'L\'activité physique régulière présente de nombreux avantages pour les personnes diabétiques :\n\n• Améliore la sensibilité à l\'insuline\n• Aide à maintenir un poids santé\n• Réduit le risque de maladies cardiovasculaires\n• Améliore la circulation sanguine\n• Réduit le stress\n\nVisez au moins 150 minutes d\'activité modérée par semaine, réparties sur plusieurs jours.',
-        image: 'https://www.example.com/exercise.jpg'
-      },
-      {
-        id: 7,
-        title: 'Activités recommandées',
-        summary: 'Découvrez les meilleures activités physiques pour les personnes atteintes de diabète.',
-        content: 'Voici quelques activités particulièrement bénéfiques pour les personnes diabétiques :\n\n• La marche rapide\n• La natation\n• Le vélo\n• La danse\n• Le yoga\n• L\'aquagym\n\nCommencez doucement et augmentez progressivement l\'intensité. Consultez votre médecin avant de commencer un nouveau programme d\'exercice.',
-        image: 'https://www.example.com/activities.jpg'
-      }
-    ],
-    medicaments: [
-      {
-        id: 8,
-        title: 'Comprendre votre traitement',
-        summary: 'Connaître vos médicaments et leur fonctionnement est essentiel pour gérer efficacement le diabète.',
-        content: 'Différents types de médicaments peuvent être prescrits pour le diabète :\n\n• Insuline : remplace l\'insuline que votre corps ne produit pas ou pas suffisamment\n• Metformine : réduit la production de glucose par le foie\n• Sulfonylurées : stimulent la production d\'insuline\n• Inhibiteurs de la DPP-4 : augmentent les hormones qui stimulent la production d\'insuline\n• Inhibiteurs du SGLT2 : aident les reins à éliminer le glucose\n\nIl est crucial de prendre vos médicaments comme prescrit et de signaler tout effet secondaire à votre médecin.',
-        image: 'https://www.example.com/medications.jpg'
-      },
-      {
-        id: 9,
-        title: 'Gestion des médicaments',
-        summary: 'Des conseils pratiques pour gérer efficacement vos médicaments contre le diabète.',
-        content: 'Pour tirer le meilleur parti de votre traitement :\n\n• Prenez vos médicaments à heures régulières\n• Utilisez un pilulier pour organiser vos doses\n• N\'arrêtez jamais un médicament sans consulter votre médecin\n• Informez tous vos médecins des médicaments que vous prenez\n• Vérifiez les interactions médicamenteuses avec votre pharmacien\n• Conservez vos médicaments correctement\n\nUne bonne gestion des médicaments est essentielle pour contrôler votre diabète.',
-        image: 'https://www.example.com/medication-management.jpg'
-      }
-    ]
-  };
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Quels sont les différents types de diabète ?</Text>
+        
+        <View style={styles.typeContainer}>
+          <View style={styles.typeCard}>
+            <Text style={styles.typeTitle}>Diabète de type 1</Text>
+            <Text style={styles.typeText}>
+              Maladie auto immune, traitée par insuline diagnostiquée dans l'enfance ou jeune adulte.
+            </Text>
+          </View>
+          
+          <View style={styles.typeCard}>
+            <Text style={styles.typeTitle}>Diabète De type 2</Text>
+            <Text style={styles.typeText}>
+              Plus fréquent, souvent lié au mode de vie et à des facteurs génétiques.
+              Peut être contrôler par une alimentation saine, de l'exercice, des médicaments oraux et parfois de
+              l'insuline.
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Quels sont les signes et symptômes possible du diabète ?</Text>
+        <View style={styles.symptomsList}>
+          <View style={styles.symptomItem}>
+            <Icon name="water" size={24} color="#4CAF50" />
+            <Text style={styles.symptomText}>Soif excessive</Text>
+          </View>
+          <View style={styles.symptomItem}>
+            <Icon name="toilet" size={24} color="#4CAF50" />
+            <Text style={styles.symptomText}>Uriner fréquemment</Text>
+          </View>
+          <View style={styles.symptomItem}>
+            <Icon name="sleep" size={24} color="#4CAF50" />
+            <Text style={styles.symptomText}>Fatigue</Text>
+          </View>
+          <View style={styles.symptomItem}>
+            <Icon name="scale" size={24} color="#4CAF50" />
+            <Text style={styles.symptomText}>Perte de poids inexpliquée</Text>
+          </View>
+          <View style={styles.symptomItem}>
+            <Icon name="eye" size={24} color="#4CAF50" />
+            <Text style={styles.symptomText}>Vision floue</Text>
+          </View>
+          <View style={styles.symptomItem}>
+            <Icon name="bacteria" size={24} color="#4CAF50" />
+            <Text style={styles.symptomText}>Infections fréquentes</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Les facteurs de risques du diabète de type 2</Text>
+        <View style={styles.risksList}>
+          <View style={styles.riskItem}>
+            <Icon name="weight" size={24} color="#FF5722" />
+            <Text style={styles.riskText}>Surpoids/Obesité</Text>
+          </View>
+          <View style={styles.riskItem}>
+            <Icon name="food" size={24} color="#FF5722" />
+            <Text style={styles.riskText}>Alimentation riche en sucre/graisse</Text>
+          </View>
+          <View style={styles.riskItem}>
+            <Icon name="sofa" size={24} color="#FF5722" />
+            <Text style={styles.riskText}>Mode de vie sédentaire</Text>
+          </View>
+          <View style={styles.riskItem}>
+            <Icon name="dna" size={24} color="#FF5722" />
+            <Text style={styles.riskText}>Prédisposition génétique</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Les organes touchés par le diabète</Text>
+        <View style={styles.organsContainer}>
+          <View style={styles.organRow}>
+            <View style={styles.organItem}>
+              <Icon name="tooth" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Bouche</Text>
+            </View>
+            <View style={styles.organItem}>
+              <Icon name="bone" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Articulations</Text>
+            </View>
+            <View style={styles.organItem}>
+              <Icon name="eye" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Yeux</Text>
+            </View>
+          </View>
+          <View style={styles.organRow}>
+            <View style={styles.organItem}>
+              <Icon name="stomach" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Pancréas</Text>
+            </View>
+            <View style={styles.organItem}>
+              <Icon name="liver" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Foie</Text>
+            </View>
+          </View>
+          <View style={styles.organRow}>
+            <View style={styles.organItem}>
+              <Icon name="human" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Peau</Text>
+            </View>
+            <View style={styles.organItem}>
+              <Icon name="human-male" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Corps</Text>
+            </View>
+            <View style={styles.organItem}>
+              <Icon name="heart-pulse" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Système vasculaire</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Prévenir le diabète de type 2</Text>
+        <View style={styles.preventionList}>
+          <View style={styles.preventionItem}>
+            <Icon name="doctor" size={24} color="#4CAF50" />
+            <Text style={styles.preventionText}>Bilan de santé régulier</Text>
+          </View>
+          <View style={styles.preventionItem}>
+            <Icon name="scale-balance" size={24} color="#4CAF50" />
+            <Text style={styles.preventionText}>Contrôler son poids</Text>
+          </View>
+          <View style={styles.preventionItem}>
+            <Icon name="food-apple" size={24} color="#4CAF50" />
+            <Text style={styles.preventionText}>Adopter une alimentation équilibrée</Text>
+          </View>
+          <View style={styles.preventionItem}>
+            <Icon name="run" size={24} color="#4CAF50" />
+            <Text style={styles.preventionText}>Avoir une activitée physique régulière</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Besoin d'aller plus loin ?</Text>
+        <Text style={styles.cardSubtitle}>Vous avez des questions ?</Text>
+        <Text style={styles.cardText}>Rapprochez-vous de :</Text>
+        <View style={styles.contactList}>
+          <View style={styles.contactItem}>
+            <Icon name="doctor" size={24} color="#2196F3" />
+            <Text style={styles.contactText}>Votre médecin traitant et/ou médecin du travail</Text>
+          </View>
+          <View style={styles.contactItem}>
+            <Icon name="hospital-building" size={24} color="#2196F3" />
+            <Text style={styles.contactText}>Des infirmièr(e)s dans vos écoles, entreprises, etc...</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.footerCard}>
+        <Text style={styles.footerTitle}>Le diabète : Comprendre, prévenir & agir !</Text>
+      </View>
+    </ScrollView>
+  );
+
+  const renderNutritionContent = () => (
+    <ScrollView style={styles.contentContainer}>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Le sucre : un peu, beaucoup, à la folie ou pas du tout ?</Text>
+        <Text style={styles.cardText}>
+          C'est une source d'énergie essentielle notamment pour le cerveau et les muscles mais tous les
+          sucres ne se valent pas !
+        </Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>C'est quoi le sucre ?</Text>
+        <View style={styles.sugarTypes}>
+          <View style={styles.sugarTypeCard}>
+            <Icon name="cube-outline" size={32} color="#FF9800" />
+            <Text style={styles.sugarTypeTitle}>Sucres simples</Text>
+            <Text style={styles.sugarTypeText}>
+              De petites tailles et composés de 1 à 3 unités de sucre dit "ose". Ils sont aussi
+              ajoutés dans les produits transformés donc "cachés"...
+            </Text>
+          </View>
+          <View style={styles.sugarTypeCard}>
+            <Icon name="cube-scan" size={32} color="#4CAF50" />
+            <Text style={styles.sugarTypeTitle}>Sucres complexes</Text>
+            <Text style={styles.sugarTypeText}>
+              Constitués d'une chaîne parfois très complexe. De saveur non sucrées et
+              absorbées plus lentement que les glucides simples.
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Que se passe t-il quand je mange du sucre ?</Text>
+        <Text style={styles.cardText}>
+          Et le fameux Index Glycémique (IG) ? Il s'agit de la vitesse d'absorption des glucides.
+          Et plus l'aliment est transformé...plus l'IG monte !
+        </Text>
+        <View style={styles.igContainer}>
+          <View style={styles.igCard}>
+            <Text style={styles.igTitle}>IG Bas</Text>
+            <Icon name="arrow-down" size={24} color="#4CAF50" />
+          </View>
+          <View style={styles.igCard}>
+            <Text style={styles.igTitle}>IG Haut</Text>
+            <Icon name="arrow-up" size={24} color="#F44336" />
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Comment gérer ma consommation de sucre ?</Text>
+        <Text style={styles.cardSubtitle}>Pour un adulte avec un apport calorique d'environ 2000 calories :</Text>
+        <View style={styles.sugarLimits}>
+          <View style={styles.limitItem}>
+            <Text style={styles.limitTitle}>Glucides totaux</Text>
+            <Text style={styles.limitText}>Environ 225 à 325 grammes/jour soit 50% de nos apports alimentaires !</Text>
+          </View>
+          <View style={styles.limitItem}>
+            <Text style={styles.limitTitle}>Sucres ajoutés</Text>
+            <Text style={styles.limitText}>Limiter à 25 gr/jour, selon les recommandations de l'OMS</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>J'évalue le sucre ajouté</Text>
+        <Text style={styles.cardText}>
+          Objectif : 25 gr de sucres ajoutés par jour c'est environ 5 morceaux de sucre
+        </Text>
+        <Text style={styles.cardSubtitle}>J'apprends à lire les étiquettes</Text>
+        <Text style={styles.cardText}>
+          La quantité de sucres : indique la teneur totale de sucres dans l'aliment et précise les sucres
+          "simples" par "dont sucres". Les aliments avec le moins de "sucres" sont à privilégier.
+        </Text>
+        <Text style={styles.cardText}>
+          Si pour 100g il y a 30g de sucres cela représente 6 morceaux de sucres
+        </Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Je deviens sucrément astucieux !</Text>
+        <View style={styles.tipsList}>
+          <View style={styles.tipItem}>
+            <Icon name="chef-hat" size={24} color="#4CAF50" />
+            <Text style={styles.tipText}>Je cuisine maison des aliments bruts</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Icon name="grain" size={24} color="#4CAF50" />
+            <Text style={styles.tipText}>Je préfère les céréales les moins raffinées possible</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Icon name="cup" size={24} color="#4CAF50" />
+            <Text style={styles.tipText}>J'évite les boissons sucrées</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Icon name="food-variant-off" size={24} color="#4CAF50" />
+            <Text style={styles.tipText}>J'évite les édulcorants</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Icon name="factory" size={24} color="#4CAF50" />
+            <Text style={styles.tipText}>J'évite les produits industriels</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Icon name="silverware-fork-knife" size={24} color="#4CAF50" />
+            <Text style={styles.tipText}>Je compose mon repas avec l'assiette idéale</Text>
+          </View>
+          <View style={styles.tipItem}>
+            <Icon name="run" size={24} color="#4CAF50" />
+            <Text style={styles.tipText}>Je pratique une activité physique régulière</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>L'assiette idéale !</Text>
+        <View style={styles.plateContainer}>
+          <View style={styles.plateSection}>
+            <View style={[styles.platePart, styles.plateVegetables]}>
+              <Text style={styles.plateText}>En légumes</Text>
+            </View>
+            <View style={[styles.platePart, styles.plateStarch]}>
+              <Text style={styles.plateText}>En féculents</Text>
+            </View>
+            <View style={[styles.platePart, styles.plateProtein]}>
+              <Text style={styles.plateText}>En protéines</Text>
+            </View>
+          </View>
+        </View>
+        <Text style={styles.cardSubtitle}>Vous connaissez la loi Pareto 80/20 ?</Text>
+        <Text style={styles.cardText}>• 10 repas selon l'assiette idéale</Text>
+        <Text style={styles.cardText}>• 4 repas plaisir par semaine</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Besoin d'aller plus loin ?</Text>
+        <Text style={styles.cardSubtitle}>Vous avez des questions ?</Text>
+        <Text style={styles.cardText}>
+          N'hésitez pas à consulter votre mutuelle, qui peut potentiellement prendre en charge
+          un rendez-vous chez un nutritionniste.
+        </Text>
+        <Text style={styles.cardText}>Rapprochez-vous de :</Text>
+        <View style={styles.contactList}>
+          <View style={styles.contactItem}>
+            <Icon name="doctor" size={24} color="#2196F3" />
+            <Text style={styles.contactText}>Votre médecin traitant et/ou médecin du travail</Text>
+          </View>
+          <View style={styles.contactItem}>
+            <Icon name="hospital-building" size={24} color="#2196F3" />
+            <Text style={styles.contactText}>Des infirmièr(e)s des sites de Sopra Steria</Text>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
+  );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Éducation Santé</Text>
-      
-      {/* Catégories */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.categoriesContainer}
-      >
-        {categories.map(category => (
-          <TouchableOpacity
-            key={category.id}
-            style={[
-              styles.categoryButton,
-              activeCategory === category.id && styles.activeCategoryButton
-            ]}
-            onPress={() => setActiveCategory(category.id)}
-          >
-            <Icon 
-              name={category.icon} 
-              size={24} 
-              color={activeCategory === category.id ? '#fff' : '#2196F3'} 
-            />
-            <Text 
-              style={[
-                styles.categoryText,
-                activeCategory === category.id && styles.activeCategoryText
-              ]}
-            >
-              {category.title}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-      
-      {/* Articles */}
-      <ScrollView style={styles.articlesContainer}>
-        {articles[activeCategory].map(article => (
-          <TouchableOpacity 
-            key={article.id}
-            style={styles.articleCard}
-          >
-            <View style={styles.articleHeader}>
-              <Icon name="book-open-page-variant" size={24} color="#4CAF50" />
-              <Text style={styles.articleTitle}>{article.title}</Text>
-            </View>
-            <Text style={styles.articleSummary}>{article.summary}</Text>
-            <View style={styles.readMoreContainer}>
-              <Text style={styles.readMore}>Lire plus</Text>
-              <Icon name="chevron-right" size={20} color="#2196F3" />
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-      
-      {/* Conseil du jour */}
-      <View style={styles.tipContainer}>
-        <View style={styles.tipHeader}>
-          <Icon name="lightbulb-on" size={24} color="#FFD700" />
-          <Text style={styles.tipTitle}>Conseil du jour</Text>
-        </View>
-        <Text style={styles.tipContent}>
-          Buvez beaucoup d'eau tout au long de la journée. L'hydratation aide à maintenir une glycémie stable et favorise l'élimination des toxines.
-        </Text>
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'diabete' && styles.activeTab]}
+          onPress={() => setActiveTab('diabete')}
+        >
+          <Icon 
+            name="diabetes" 
+            size={24} 
+            color={activeTab === 'diabete' ? '#4CAF50' : '#757575'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'diabete' && styles.activeTabText]}>
+            Le Diabète
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'nutrition' && styles.activeTab]}
+          onPress={() => setActiveTab('nutrition')}
+        >
+          <Icon 
+            name="food-apple" 
+            size={24} 
+            color={activeTab === 'nutrition' ? '#4CAF50' : '#757575'} 
+          />
+          <Text style={[styles.tabText, activeTab === 'nutrition' && styles.activeTabText]}>
+            Nutrition
+          </Text>
+        </TouchableOpacity>
       </View>
+      
+      {activeTab === 'diabete' ? renderDiabeteContent() : renderNutritionContent()}
     </View>
   );
 };
@@ -171,100 +375,289 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    padding: 16,
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-    marginTop: 10,
-  },
-  categoriesContainer: {
+  tabContainer: {
     flexDirection: 'row',
-    marginBottom: 20,
-  },
-  categoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 25,
-    marginRight: 10,
-    elevation: 2,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
-  activeCategoryButton: {
-    backgroundColor: '#2196F3',
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    flexDirection: 'row',
   },
-  categoryText: {
+  activeTab: {
+    borderBottomWidth: 3,
+    borderBottomColor: '#4CAF50',
+  },
+  tabText: {
     marginLeft: 8,
     fontSize: 16,
-    color: '#333',
+    color: '#757575',
   },
-  activeCategoryText: {
-    color: '#fff',
+  activeTabText: {
+    color: '#4CAF50',
+    fontWeight: 'bold',
   },
-  articlesContainer: {
-    flex: 1,
+  contentContainer: {
+    padding: 16,
   },
-  articleCard: {
+  card: {
     backgroundColor: '#fff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
   },
-  articleHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  articleTitle: {
+  cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginLeft: 10,
-    flex: 1,
+    marginBottom: 12,
   },
-  articleSummary: {
+  cardSubtitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#555',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  cardText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  typeContainer: {
+    marginTop: 8,
+  },
+  typeCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#4CAF50',
+  },
+  typeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  typeText: {
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
   },
-  readMoreContainer: {
+  symptomsList: {
+    marginTop: 8,
+  },
+  symptomItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 10,
+    marginBottom: 12,
   },
-  readMore: {
-    color: '#2196F3',
-    fontWeight: 'bold',
+  symptomText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
   },
-  tipContainer: {
-    backgroundColor: '#E1F5FE',
+  risksList: {
+    marginTop: 8,
+  },
+  riskItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  riskText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
+  },
+  organsContainer: {
+    marginTop: 16,
+  },
+  organRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  organItem: {
+    alignItems: 'center',
+  },
+  organText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  preventionList: {
+    marginTop: 8,
+  },
+  preventionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  preventionText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
+  },
+  contactList: {
+    marginTop: 12,
+  },
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  contactText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
+    flexShrink: 1,
+  },
+  footerCard: {
+    backgroundColor: '#4CAF50',
     borderRadius: 12,
     padding: 16,
-    marginTop: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4CAF50',
-  },
-  tipHeader: {
-    flexDirection: 'row',
+    marginBottom: 16,
     alignItems: 'center',
-    marginBottom: 10,
   },
-  tipTitle: {
+  footerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 10,
+    color: '#fff',
+    textAlign: 'center',
   },
-  tipContent: {
-    fontSize: 14,
+  // Styles pour la section nutrition
+  sugarTypes: {
+    marginTop: 8,
+  },
+  sugarTypeCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  sugarTypeTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#333',
+    marginVertical: 8,
+  },
+  sugarTypeText: {
+    fontSize: 14,
+    color: '#666',
     lineHeight: 20,
+    textAlign: 'center',
+  },
+  igContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 16,
+  },
+  igCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    width: '45%',
+  },
+  igTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  sugarLimits: {
+    marginTop: 8,
+  },
+  limitItem: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  limitTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 8,
+  },
+  limitText: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+  },
+  tipsList: {
+    marginTop: 8,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tipText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 12,
+    flexShrink: 1,
+  },
+  plateContainer: {
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  plateSection: {
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: '#f0f0f0',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  platePart: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  plateVegetables: {
+    backgroundColor: '#4CAF50',
+    width: '50%',
+    height: '100%',
+    left: 0,
+  },
+  plateStarch: {
+    backgroundColor: '#FFC107',
+    width: '25%',
+    height: '100%',
+    left: '50%',
+  },
+  plateProtein: {
+    backgroundColor: '#F44336',
+    width: '25%',
+    height: '100%',
+    left: '75%',
+  },
+  plateText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+    textAlign: 'center',
+    padding: 5,
   },
 });
 
