@@ -114,7 +114,7 @@ const EducationScreen = () => {
               <Text style={styles.organText}>Pancréas</Text>
             </View>
             <View style={styles.organItem}>
-              <Icon name="liver" size={32} color="#2196F3" />
+              <Icon name="organ" size={32} color="#2196F3" />
               <Text style={styles.organText}>Foie</Text>
             </View>
           </View>
@@ -124,8 +124,8 @@ const EducationScreen = () => {
               <Text style={styles.organText}>Peau</Text>
             </View>
             <View style={styles.organItem}>
-              <Icon name="human-male" size={32} color="#2196F3" />
-              <Text style={styles.organText}>Corps</Text>
+              <Icon name="foot-print" size={32} color="#2196F3" />
+              <Text style={styles.organText}>Pied</Text>
             </View>
             <View style={styles.organItem}>
               <Icon name="heart-pulse" size={32} color="#2196F3" />
