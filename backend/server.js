@@ -9,6 +9,7 @@ const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const rendezvousRoutes = require('./routes/rendezvousRoutes');
+const repasRoutes = require('./routes/repasRoutes'); // Ajout de la nouvelle route
 
 const app = express();
 app.use(express.json());
@@ -21,5 +22,6 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/rendezvous', rendezvousRoutes);
+app.use('/api/repas', repasRoutes); // Enregistrement de la nouvelle route
 
 app.listen(5000, () => console.log("🚀 Serveur sur http://localhost:5000"));
