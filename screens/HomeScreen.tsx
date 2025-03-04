@@ -4,11 +4,12 @@ import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, Alert
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LineChart } from 'react-native-chart-kit';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native'; 
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
   const [glycemieStats, setGlycemieStats] = useState({
-    lastValue: 0, 
+    lastValue: 0,
     lastUpdate: 'Chargement...',
     chartData: {
       labels: ['6h', '9h', '12h', '15h', '18h', '21h'],
@@ -16,7 +17,7 @@ const HomeScreen = () => {
     },
     dataDate: null,
   });
-  
+
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -27,16 +28,16 @@ const HomeScreen = () => {
     try {
       setLoading(true);
       const token = await AsyncStorage.getItem('token');
-      
+
       if (!token) {
         throw new Error('Token non trouvé, veuillez vous reconnecter');
       }
-      
+
       const apiUrl = 'https://nexcura.onrender.com/api/user/me';
-      
+
       console.log('Fetching from:', apiUrl);
       console.log('Using token:', token.substring(0, 10) + '...');
-      
+
       const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
@@ -44,58 +45,58 @@ const HomeScreen = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Erreur serveur');
       }
-      
+
       const data = await response.json();
       console.log('User data received:', data);
       console.log('Glycémie data count:', data.glycemie ? data.glycemie.length : 0);
-      
+
       setUserData(data);
-      
+
       // Update glycemie data if available
       if (data.glycemie && data.glycemie.length > 0) {
         console.log('Traitement des données de glycémie...');
         // Regrouper les données par jour
         const groupedByDay = groupGlycemieByDay(data.glycemie);
         console.log('Jours disponibles:', Object.keys(groupedByDay));
-        
+
         // Obtenir la date actuelle au format YYYY-MM-DD
         const today = new Date().toISOString().split('T')[0];
-        
+
         // Vérifier si nous avons des données pour aujourd'hui
         let dataToDisplay = groupedByDay[today] || [];
         let displayDate = today;
-        
+
         // Si pas de données pour aujourd'hui, prendre la dernière date disponible
         if (dataToDisplay.length === 0) {
           // Trier les dates en ordre décroissant
           const availableDates = Object.keys(groupedByDay).sort().reverse();
           console.log('Pas de données pour aujourd\'hui, dates disponibles:', availableDates);
-          
+
           if (availableDates.length > 0) {
             displayDate = availableDates[0];
             dataToDisplay = groupedByDay[displayDate];
             console.log(`Utilisation des données du ${displayDate}, ${dataToDisplay.length} mesures trouvées`);
           }
         }
-        
+
         // Formater les données pour l'affichage
         const formattedData = formatGlycemieData(dataToDisplay);
-        
+
         // Obtenir la dernière valeur (la plus récente)
         const latestGlycemie = data.glycemie[0];
-        
+
         // Formater la date pour l'affichage
         const displayDateObj = new Date(displayDate);
         const isToday = displayDate === today;
-        const dateDisplay = isToday 
-          ? "Aujourd'hui" 
+        const dateDisplay = isToday
+          ? "Aujourd'hui"
           : displayDateObj.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
-        
+
         setGlycemieStats({
           lastValue: latestGlycemie.valeur,
           lastUpdate: new Date(latestGlycemie.date).toLocaleString(),
@@ -115,7 +116,7 @@ const HomeScreen = () => {
           dataDate: "Aucune donnée disponible",
         });
       }
-      
+
       setLoading(false);
       setRefreshing(false);
     } catch (error) {
@@ -131,13 +132,13 @@ const HomeScreen = () => {
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
-      
+
       // Configurer un rafraîchissement automatique toutes les 60 secondes
       const intervalId = setInterval(() => {
         console.log('Rafraîchissement automatique des données...');
         fetchUserData();
       }, 60000); // 60000 ms = 1 minute
-      
+
       // Nettoyer l'intervalle lorsque l'écran n'est plus affiché
       return () => clearInterval(intervalId);
     }, [])
@@ -152,18 +153,18 @@ const HomeScreen = () => {
   // Fonction pour regrouper les données de glycémie par jour
   const groupGlycemieByDay = (glycemieData) => {
     const grouped = {};
-    
+
     glycemieData.forEach(item => {
       // Extraire la date sans l'heure (YYYY-MM-DD)
       const dateOnly = new Date(item.date).toISOString().split('T')[0];
-      
+
       if (!grouped[dateOnly]) {
         grouped[dateOnly] = [];
       }
-      
+
       grouped[dateOnly].push(item);
     });
-    
+
     return grouped;
   };
 
@@ -175,15 +176,15 @@ const HomeScreen = () => {
         values: [0, 0, 0, 0, 0, 0],
       };
     }
-    
+
     // Trier par heure
-    const sortedItems = [...glycemieItems].sort((a, b) => 
+    const sortedItems = [...glycemieItems].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-    
+
     // Limiter à 6 points de données maximum
     const limitedItems = sortedItems.slice(0, 6);
-    
+
     return {
       labels: limitedItems.map(g => new Date(g.date).getHours() + 'h'),
       values: limitedItems.map(g => g.valeur),
@@ -192,7 +193,7 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
@@ -226,7 +227,7 @@ const HomeScreen = () => {
           ) : (
             <Text style={styles.chartDateInfo}>Aucune donnée disponible</Text>
           )}
-          
+
           {/* Afficher le graphique seulement s'il y a des données */}
           {glycemieStats.chartData.values.some(val => val > 0) ? (
             <LineChart
@@ -266,7 +267,10 @@ const HomeScreen = () => {
 
         {/* Boutons d'action */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('MealAnalysis')}
+          >
             <Icon name="apple" size={24} color="#4CAF50" />
             <Text style={styles.actionText}>Ajouter un repas</Text>
           </TouchableOpacity>

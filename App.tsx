@@ -11,35 +11,46 @@ import CalendarScreen from './screens/CalendarScreen';
 import EducationScreen from './screens/EducationScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
-import ProfileScreen from './screens/ProfileScreen'; // Import du nouveau ProfileScreen
+import ProfileScreen from './screens/ProfileScreen';
+import MealAnalysisScreen from './screens/MealAnalysisScreen'; // Import de la nouvelle page
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+// Stack pour l'écran d'accueil et l'analyse de repas
+const HomeStack = () => (
+  <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Screen name="Home" component={HomeScreen} />
+    <Stack.Screen name="MealAnalysis" component={MealAnalysisScreen} />
+  </Stack.Navigator>
+);
+
 // Barre de navigation inférieure
 const MainApp = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
-    tabBarIcon: ({ focused, color, size }) => {
-    let iconName;
-    if (route.name === 'TabHome') {
-    iconName = focused ? 'home' : 'home-outline';
-    } else if (route.name === 'TabCalendar') {
-    iconName = focused ? 'calendar' : 'calendar-outline';
-    } else if (route.name === 'TabEducation') {
-    iconName = focused ? 'book-open-variant' : 'book-open-outline';
-    } else if (route.name === 'TabProfile') {
-    iconName = focused ? 'account' : 'account-outline';
-    }
-    return <Icon name={iconName} size={size} color={color} />;
-    },
-    tabBarActiveTintColor: '#4CAF50',
-    tabBarInactiveTintColor: 'gray',
-    headerShown: false,
+      tabBarIcon: ({ focused, color, size }) => {
+        let iconName;
+        if (route.name === 'TabHome') {
+          iconName = focused ? 'home' : 'home-outline';
+        } else if (route.name === 'TabCalendar') {
+          iconName = focused ? 'calendar' : 'calendar-outline';
+        } else if (route.name === 'TabEducation') {
+          iconName = focused ? 'book-open-variant' : 'book-open-outline';
+        } else if (route.name === 'TabProfile') {
+          iconName = focused ? 'account' : 'account-outline';
+        } else if (route.name === 'TabMealAnalysis') {
+          iconName = focused ? 'food-apple' : 'food-apple-outline';
+        }
+        return <Icon name={iconName} size={size} color={color} />;
+      },
+      tabBarActiveTintColor: '#4CAF50',
+      tabBarInactiveTintColor: 'gray',
+      headerShown: false,
     })}
   >
-    <Tab.Screen name="TabHome" component={HomeScreen} options={{ tabBarLabel: 'Accueil' }} />
+    <Tab.Screen name="TabHome" component={HomeStack} options={{ tabBarLabel: 'Accueil' }} />
     <Tab.Screen name="TabCalendar" component={CalendarScreen} options={{ tabBarLabel: 'Calendrier' }} />
     <Tab.Screen name="TabEducation" component={EducationScreen} options={{ tabBarLabel: 'Éducation' }} />
     <Tab.Screen name="TabProfile" component={ProfileScreen} options={{ tabBarLabel: 'Profil' }} />
@@ -50,15 +61,15 @@ const MainApp = () => (
 const LogoutScreen = () => {
   useEffect(() => {
     const logout = async () => {
-    try {
-    await AsyncStorage.removeItem('token');
-    // Utiliser la fonction globale pour mettre à jour l'état d'authentification
-    if (global.setIsAuthenticated) {
-    global.setIsAuthenticated(false);
-    }
-    } catch (error) {
-    console.error('Erreur lors de la déconnexion :', error);
-    }
+      try {
+        await AsyncStorage.removeItem('token');
+        // Utiliser la fonction globale pour mettre à jour l'état d'authentification
+        if (global.setIsAuthenticated) {
+          global.setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la déconnexion :', error);
+      }
     };
 
     logout();
@@ -66,7 +77,7 @@ const LogoutScreen = () => {
 
   return (
     <View style={styles.center}>
-    <Text>Déconnexion en cours...</Text>
+      <Text>Déconnexion en cours...</Text>
     </View>
   );
 };
@@ -75,53 +86,61 @@ const LogoutScreen = () => {
 const DrawerNavigator = () => (
   <Drawer.Navigator
     screenOptions={{
-    drawerStyle: {
-    backgroundColor: '#f5f5f5',
-    width: 240,
-    },
-    drawerActiveTintColor: '#4CAF50',
-    drawerInactiveTintColor: 'gray',
+      drawerStyle: {
+        backgroundColor: '#f5f5f5',
+        width: 240,
+      },
+      drawerActiveTintColor: '#4CAF50',
+      drawerInactiveTintColor: 'gray',
     }}
   >
     <Drawer.Screen
-    name="DrawerHome"
-    component={MainApp}
-    options={{
-    title: 'Accueil',
-    drawerIcon: ({ color, size }) => <Icon name="home" size={size} color={color} />,
-    }}
+      name="DrawerHome"
+      component={MainApp}
+      options={{
+        title: 'Accueil',
+        drawerIcon: ({ color, size }) => <Icon name="home" size={size} color={color} />,
+      }}
     />
     <Drawer.Screen
-    name="DrawerCalendar"
-    component={CalendarScreen}
-    options={{
-    title: 'Calendrier',
-    drawerIcon: ({ color, size }) => <Icon name="calendar" size={size} color={color} />,
-    }}
+      name="DrawerCalendar"
+      component={CalendarScreen}
+      options={{
+        title: 'Calendrier',
+        drawerIcon: ({ color, size }) => <Icon name="calendar" size={size} color={color} />,
+      }}
     />
     <Drawer.Screen
-    name="DrawerEducation"
-    component={EducationScreen}
-    options={{
-    title: 'Éducation Santé',
-    drawerIcon: ({ color, size }) => <Icon name="book-open-variant" size={size} color={color} />,
-    }}
+      name="DrawerMealAnalysis"
+      component={MealAnalysisScreen}
+      options={{
+        title: 'Analyse de Repas',
+        drawerIcon: ({ color, size }) => <Icon name="food-apple" size={size} color={color} />,
+      }}
     />
     <Drawer.Screen
-    name="DrawerProfile"
-    component={ProfileScreen}
-    options={{
-    title: 'Mon Profil',
-    drawerIcon: ({ color, size }) => <Icon name="account" size={size} color={color} />,
-    }}
+      name="DrawerEducation"
+      component={EducationScreen}
+      options={{
+        title: 'Éducation Santé',
+        drawerIcon: ({ color, size }) => <Icon name="book-open-variant" size={size} color={color} />,
+      }}
     />
     <Drawer.Screen
-    name="Logout"
-    component={LogoutScreen}
-    options={{
-    title: 'Déconnexion',
-    drawerIcon: ({ color, size }) => <Icon name="logout" size={size} color={color} />,
-    }}
+      name="DrawerProfile"
+      component={ProfileScreen}
+      options={{
+        title: 'Mon Profil',
+        drawerIcon: ({ color, size }) => <Icon name="account" size={size} color={color} />,
+      }}
+    />
+    <Drawer.Screen
+      name="Logout"
+      component={LogoutScreen}
+      options={{
+        title: 'Déconnexion',
+        drawerIcon: ({ color, size }) => <Icon name="logout" size={size} color={color} />,
+      }}
     />
   </Drawer.Navigator>
 );
@@ -143,30 +162,30 @@ const App = () => {
 
   useEffect(() => {
     const checkLogin = async () => {
-    const token = await AsyncStorage.getItem('token');
-    setIsAuthenticated(!!token);
-    setLoading(false);
+      const token = await AsyncStorage.getItem('token');
+      setIsAuthenticated(!!token);
+      setLoading(false);
     };
     checkLogin();
   }, []);
 
   if (loading) {
     return (
-    <View style={styles.center}>
-    <Text>Chargement...</Text>
-    </View>
+      <View style={styles.center}>
+        <Text>Chargement...</Text>
+      </View>
     );
   }
 
   return (
     <NavigationContainer>
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-    {isAuthenticated ? (
-    <Stack.Screen name="MainApp" component={DrawerNavigator} />
-    ) : (
-    <Stack.Screen name="Auth" component={AuthNavigator} />
-    )}
-    </Stack.Navigator>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen name="MainApp" component={DrawerNavigator} />
+        ) : (
+          <Stack.Screen name="Auth" component={AuthNavigator} />
+        )}
+      </Stack.Navigator>
     </NavigationContainer>
   );
 };
