@@ -3,33 +3,33 @@ const router = express.Router();
 const Repas = require('../models/Repas');
 const User = require('../models/User');
 const auth = require('../middleware/authMiddleware');
-const { upload } = require('../config/cloudinary');
+const { upload, uploadToCloudinary } = require('../config/cloudinary'); // Correction ici: importation de uploadToCloudinary
 const axios = require('axios');
 
 // Service pour analyser l'image avec OpenAI
 const analyzeImageWithOpenAI = async (imageUrl) => {
   try {
     const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: "gpt-4-vision-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Analyse cette image de repas. Identifie les aliments présents et donne-moi une estimation des valeurs nutritionnelles (calories, glucides, lipides, protéines) et l'index glycémique. Réponds au format JSON avec les propriétés: aliments (array), calories (number), glucides (number), proteines (number), lipides (number), index_glycemique (number), et description (string)." },
-              { type: "image_url", image_url: { url: imageUrl } }
-            ]
-          }
-        ],
-        max_tokens: 1000
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-        }
-      }
+    'https://api.openai.com/v1/chat/completions',
+    {
+    model: "gpt-4-vision-preview",
+    messages: [
+    {
+    role: "user",
+    content: [
+    { type: "text", text: "Analyse cette image de repas. Identifie les aliments présents et donne-moi une estimation des valeurs nutritionnelles (calories, glucides, lipides, protéines) et l'index glycémique. Réponds au format JSON avec les propriétés: aliments (array), calories (number), glucides (number), proteines (number), lipides (number), index_glycemique (number), et description (string)." },
+    { type: "image_url", image_url: { url: imageUrl } }
+    ]
+    }
+    ],
+    max_tokens: 1000
+    },
+    {
+    headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+    }
+    }
     );
 
     // Extraire le JSON de la réponse textuelle
@@ -37,23 +37,23 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*?}/);
     
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0].replace(/```json\n|\n```/g, ''));
+    return JSON.parse(jsonMatch[0].replace(/```json\n|\n```/g, ''));
     } else {
-      // Tenter de parser directement si le format n'est pas dans un bloc de code
-      try {
-        return JSON.parse(content);
-      } catch (e) {
-        // Créer un objet structuré manuellement si le parsing échoue
-        return {
-          aliments: [],
-          calories: 0,
-          glucides: 0,
-          proteines: 0,
-          lipides: 0,
-          index_glycemique: 0,
-          description: "Analyse non disponible"
-        };
-      }
+    // Tenter de parser directement si le format n'est pas dans un bloc de code
+    try {
+    return JSON.parse(content);
+    } catch (e) {
+    // Créer un objet structuré manuellement si le parsing échoue
+    return {
+    aliments: [],
+    calories: 0,
+    glucides: 0,
+    proteines: 0,
+    lipides: 0,
+    index_glycemique: 0,
+    description: "Analyse non disponible"
+    };
+    }
     }
   } catch (error) {
     console.error('Erreur lors de l\'analyse de l\'image:', error);
@@ -127,49 +127,49 @@ const generateRecommendations = (mealData, userData) => {
 // Route pour ajouter un repas avec analyse d'image
 router.post('/analyze', auth, upload.single('image'), async (req, res) => {
     try {
-      // Vérifier si une image a été téléchargée
-      if (!req.file) {
-        return res.status(400).json({ message: 'Aucune image fournie' });
-      }
+    // Vérifier si une image a été téléchargée
+    if (!req.file) {
+    return res.status(400).json({ message: 'Aucune image fournie' });
+    }
   
-      // Uploader l'image vers Cloudinary
-      const result = await uploadToCloudinary(req.file.path);
-      const imageUrl = result.secure_url;
+    // Uploader l'image vers Cloudinary
+    const result = await uploadToCloudinary(req.file.path);
+    const imageUrl = result.secure_url;
   
-      // Le reste de votre code d'analyse...
-      // Analyser l'image avec OpenAI
-      const analysisResult = await analyzeImageWithOpenAI(imageUrl);
+    // Le reste de votre code d'analyse...
+    // Analyser l'image avec OpenAI
+    const analysisResult = await analyzeImageWithOpenAI(imageUrl);
   
-      // Récupérer les données de l'utilisateur pour la prédiction
-      const user = await User.findById(req.user.userId);
-      
-      // Préparer les données du repas
-      const mealData = {
-        description: analysisResult.description || req.body.description || '',
-        glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
-        index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
-        calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
-        proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
-        lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
-        aliments: analysisResult.aliments || []
-      };
+    // Récupérer les données de l'utilisateur pour la prédiction
+    const user = await User.findById(req.user.userId);
+    
+    // Préparer les données du repas
+    const mealData = {
+    description: analysisResult.description || req.body.description || '',
+    glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
+    index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
+    calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
+    proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
+    lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
+    aliments: analysisResult.aliments || []
+    };
   
-      // Prédire l'impact glycémique
-      const impactPrediction = await predictGlycemicImpact(user, mealData);
+    // Prédire l'impact glycémique
+    const impactPrediction = await predictGlycemicImpact(user, mealData);
   
-      // Renvoyer les résultats de l'analyse
-      res.status(200).json({
-        message: 'Analyse du repas réussie',
-        imageUrl,
-        analysis: {
-          ...mealData,
-          impact_glycemique: impactPrediction.impact_estime,
-          recommandations: impactPrediction.recommandations
-        }
-      });
+    // Renvoyer les résultats de l'analyse
+    res.status(200).json({
+    message: 'Analyse du repas réussie',
+    imageUrl,
+    analysis: {
+    ...mealData,
+    impact_glycemique: impactPrediction.impact_estime,
+    recommandations: impactPrediction.recommandations
+    }
+    });
     } catch (error) {
-      console.error('Erreur lors de l\'analyse du repas:', error);
-      res.status(500).json({ message: 'Erreur lors de l\'analyse du repas', error: error.message });
+    console.error('Erreur lors de l\'analyse du repas:', error);
+    res.status(500).json({ message: 'Erreur lors de l\'analyse du repas', error: error.message });
     }
   });
 
@@ -177,43 +177,43 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     const { 
-      photo, 
-      description, 
-      index_glycemique, 
-      glucides_totaux, 
-      impact_glycemique, 
-      commentaire,
-      calories,
-      proteines,
-      lipides,
-      aliments
+    photo, 
+    description, 
+    index_glycemique, 
+    glucides_totaux, 
+    impact_glycemique, 
+    commentaire,
+    calories,
+    proteines,
+    lipides,
+    aliments
     } = req.body;
 
     // Créer un nouveau repas
     const newRepas = new Repas({
-      user_id: req.user.userId,
-      photo,
-      description,
-      index_glycemique,
-      glucides_totaux,
-      date: new Date(),
-      impact_glycemique: {
-        avant_repas: impact_glycemique.avant_repas || 0,
-        apres_repas: impact_glycemique.apres_repas || 0
-      },
-      commentaire,
-      calories,
-      proteines,
-      lipides,
-      aliments
+    user_id: req.user.userId,
+    photo,
+    description,
+    index_glycemique,
+    glucides_totaux,
+    date: new Date(),
+    impact_glycemique: {
+    avant_repas: impact_glycemique.avant_repas || 0,
+    apres_repas: impact_glycemique.apres_repas || 0
+    },
+    commentaire,
+    calories,
+    proteines,
+    lipides,
+    aliments
     });
 
     // Sauvegarder le repas
     await newRepas.save();
 
     res.status(201).json({
-      message: 'Repas sauvegardé avec succès',
-      repas: newRepas
+    message: 'Repas sauvegardé avec succès',
+    repas: newRepas
     });
   } catch (error) {
     console.error('Erreur lors de la sauvegarde du repas:', error);
@@ -225,7 +225,7 @@ router.post('/', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   try {
     const repas = await Repas.find({ user_id: req.user.userId })
-      .sort({ date: -1 });
+    .sort({ date: -1 });
 
     res.json(repas);
   } catch (error) {

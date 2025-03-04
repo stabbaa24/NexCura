@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { API_URL } from '../config';
 
@@ -36,6 +36,23 @@ const MealAnalysisScreen = ({ navigation, route }) => {
   const [imageUri, setImageUri] = useState(null);
   const [analysisMethod, setAnalysisMethod] = useState(null); // 'manual' ou 'image'
 
+  // Demander les permissions au chargement du composant
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+        if (cameraStatus !== 'granted') {
+          console.log('Permission de caméra non accordée');
+        }
+
+        const { status: mediaLibraryStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (mediaLibraryStatus !== 'granted') {
+          console.log('Permission de galerie non accordée');
+        }
+      }
+    })();
+  }, []);
+
   // Gérer les changements d'input
   const handleChange = (name, value) => {
     setMealData({
@@ -50,23 +67,24 @@ const MealAnalysisScreen = ({ navigation, route }) => {
   // Fonction pour prendre une photo
   const takePhoto = async () => {
     try {
-      const result = await launchCamera({
-        mediaType: 'photo',
+      // Vérifier les permissions de caméra
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        setError("Vous devez autoriser l'accès à la caméra pour prendre une photo.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
         quality: 0.8,
-        saveToPhotos: true,
       });
 
-      if (result.didCancel) {
-        return;
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+        setAnalysisMethod('image');
       }
-
-      if (result.errorCode) {
-        setError(`Erreur de caméra: ${result.errorMessage}`);
-        return;
-      }
-
-      setImageUri(result.assets[0].uri);
-      setAnalysisMethod('image');
     } catch (err) {
       console.error('Erreur lors de la prise de photo:', err);
       setError('Impossible d\'accéder à la caméra');
@@ -76,22 +94,24 @@ const MealAnalysisScreen = ({ navigation, route }) => {
   // Fonction pour sélectionner une image de la galerie
   const selectImage = async () => {
     try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
+      // Vérifier les permissions de galerie
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        setError("Vous devez autoriser l'accès à la galerie pour sélectionner une image.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
         quality: 0.8,
       });
 
-      if (result.didCancel) {
-        return;
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+        setAnalysisMethod('image');
       }
-
-      if (result.errorCode) {
-        setError(`Erreur de sélection: ${result.errorMessage}`);
-        return;
-      }
-
-      setImageUri(result.assets[0].uri);
-      setAnalysisMethod('image');
     } catch (err) {
       console.error('Erreur lors de la sélection d\'image:', err);
       setError('Impossible d\'accéder à la galerie');
@@ -177,7 +197,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
     }
   };
 
-  // Fonction pour analyser manuellement
+  // Le reste du code reste inchangé
   const analyzeManually = async () => {
     try {
       setLoading(true);
@@ -342,7 +362,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           </View>
         ) : null}
 
-        {success ? (
+{success ? (
           <View style={styles.messageContainer}>
             <Text style={styles.successText}>{success}</Text>
           </View>
@@ -378,7 +398,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           </View>
         ) : null}
 
-        {imageUri && !analysisResult ? (
+{imageUri && !analysisResult ? (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Image du repas</Text>
             <Image source={{ uri: imageUri }} style={styles.mealImage} />
@@ -538,7 +558,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           </View>
         ) : null}
 
-        {analysisResult ? (
+        {analysisResult && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Résultats de l'analyse</Text>
 
@@ -551,8 +571,8 @@ const MealAnalysisScreen = ({ navigation, route }) => {
               <Text style={[
                 styles.resultValue,
                 analysisResult.impact === 'élevé' ? styles.highImpact :
-                  analysisResult.impact === 'modéré' ? styles.mediumImpact :
-                    styles.lowImpact
+                analysisResult.impact === 'modéré' ? styles.mediumImpact :
+                styles.lowImpact
               ]}>
                 {analysisResult.impact}
               </Text>
@@ -919,5 +939,4 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
   }
 });
-
 export default MealAnalysisScreen;
