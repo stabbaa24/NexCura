@@ -1,6 +1,7 @@
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 // Configuration de Cloudinary
 cloudinary.config({
@@ -9,17 +10,43 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// Configuration du stockage
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'nexcura_meals',
-    allowed_formats: ['jpg', 'jpeg', 'png'],
-    transformation: [{ width: 800, height: 800, crop: 'limit' }]
+// Créer un stockage temporaire sur disque
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const tempDir = path.join(__dirname, '../temp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    cb(null, tempDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
   }
 });
 
-// Configuration du middleware multer pour l'upload
+// Middleware pour l'upload
 const upload = multer({ storage: storage });
 
-module.exports = { cloudinary, upload };
+// Fonction pour uploader un fichier vers Cloudinary
+const uploadToCloudinary = async (filePath) => {
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: 'nexcura_meals',
+      transformation: [{ width: 800, height: 800, crop: 'limit' }]
+    });
+    
+    // Supprimer le fichier temporaire
+    fs.unlinkSync(filePath);
+    
+    return result;
+  } catch (error) {
+    // Supprimer le fichier temporaire en cas d'erreur
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    throw error;
+  }
+};
+
+module.exports = { cloudinary, upload, uploadToCloudinary };
