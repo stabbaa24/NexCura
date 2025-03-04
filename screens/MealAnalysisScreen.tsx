@@ -118,84 +118,109 @@ const MealAnalysisScreen = ({ navigation, route }) => {
     }
   };
 
-  // Fonction pour analyser l'image
-  const analyzeImage = async () => {
-    if (!imageUri) {
-      setError('Veuillez d\'abord sélectionner ou prendre une photo');
+// Fonction pour analyser l'image - mise à jour pour mieux gérer les erreurs
+const analyzeImage = async () => {
+  if (!imageUri) {
+    setError('Veuillez d\'abord sélectionner ou prendre une photo');
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError('');
+
+    // Créer un FormData pour envoyer l'image
+    const formData = new FormData();
+    formData.append('image', {
+      uri: imageUri,
+      type: 'image/jpeg',
+      name: 'meal.jpg',
+    });
+
+    // Ajouter d'autres données si nécessaire
+    if (mealData.description) {
+      formData.append('description', mealData.description);
+    }
+
+    // Obtenir le token d'authentification
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      setError('Vous devez être connecté pour analyser un repas');
+      setLoading(false);
       return;
     }
 
-    try {
-      setLoading(true);
-      setError('');
+    console.log('Envoi de l\'image pour analyse...');
+    
+    // Envoyer l'image au serveur pour analyse
+    const response = await axios.post(`${API_URL}/api/repas/analyze`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      },
+      timeout: 30000 // Augmenter le timeout à 30 secondes
+    });
 
-      // Créer un FormData pour envoyer l'image
-      const formData = new FormData();
-      formData.append('image', {
-        uri: imageUri,
-        type: 'image/jpeg',
-        name: 'meal.jpg',
-      });
+    console.log('Réponse reçue du serveur');
+    
+    // Traiter la réponse
+    const { imageUrl, analysis } = response.data;
 
-      // Ajouter d'autres données si nécessaire
-      if (mealData.description) {
-        formData.append('description', mealData.description);
-      }
-
-      // Obtenir le token d'authentification
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        setError('Vous devez être connecté pour analyser un repas');
-        setLoading(false);
-        return;
-      }
-
-      // Envoyer l'image au serveur pour analyse
-      const response = await axios.post(`${API_URL}/api/repas/analyze`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      // Traiter la réponse
-      const { imageUrl, analysis } = response.data;
-
-      // Mettre à jour les données du repas avec les résultats de l'analyse
-      setMealData({
-        name: mealData.name || 'Mon repas',
-        description: analysis.description || mealData.description,
-        carbs: analysis.glucides_totaux?.toString() || '',
-        proteins: analysis.proteines?.toString() || '',
-        fats: analysis.lipides?.toString() || '',
-        calories: analysis.calories?.toString() || '',
-        glycemicIndex: analysis.index_glycemique?.toString() || '',
-      });
-
-      // Définir le résultat de l'analyse
-      setAnalysisResult({
-        impact: analysis.impact_glycemique > 50 ? 'élevé' : analysis.impact_glycemique > 30 ? 'modéré' : 'faible',
-        expectedGlucoseRise: `${analysis.impact_glycemique} mg/dL`,
-        recommendations: analysis.recommandations || [],
-        nutritionalInfo: {
-          carbs: analysis.glucides_totaux || 0,
-          proteins: analysis.proteines || 0,
-          fats: analysis.lipides || 0,
-          calories: analysis.calories || 0,
-          glycemicIndex: analysis.index_glycemique || 0,
-          aliments: analysis.aliments || []
-        },
-        imageUrl
-      });
-
-      setSuccess('Analyse du repas terminée avec succès');
+    // Si l'analyse a échoué mais que le serveur a renvoyé une réponse
+    if (!analysis || (analysis.description === "Analyse non disponible" && !analysis.aliments.length)) {
+      // Passer en mode manuel avec les données actuelles
+      setAnalysisMethod('manual');
+      setError('L\'analyse automatique a échoué. Vous pouvez compléter les informations manuellement.');
       setLoading(false);
-    } catch (err) {
-      console.error('Erreur lors de l\'analyse de l\'image:', err);
-      setError('Une erreur est survenue lors de l\'analyse. Veuillez réessayer.');
-      setLoading(false);
+      return;
     }
-  };
+
+    // Mettre à jour les données du repas avec les résultats de l'analyse
+    setMealData({
+      name: mealData.name || 'Mon repas',
+      description: analysis.description || mealData.description,
+      carbs: analysis.glucides_totaux?.toString() || '',
+      proteins: analysis.proteines?.toString() || '',
+      fats: analysis.lipides?.toString() || '',
+      calories: analysis.calories?.toString() || '',
+      glycemicIndex: analysis.index_glycemique?.toString() || '',
+    });
+
+    // Définir le résultat de l'analyse
+    setAnalysisResult({
+      impact: analysis.impact_glycemique > 50 ? 'élevé' : analysis.impact_glycemique > 30 ? 'modéré' : 'faible',
+      expectedGlucoseRise: `${analysis.impact_glycemique} mg/dL`,
+      recommendations: analysis.recommandations || [],
+      nutritionalInfo: {
+        carbs: analysis.glucides_totaux || 0,
+        proteins: analysis.proteines || 0,
+        fats: analysis.lipides || 0,
+        calories: analysis.calories || 0,
+        glycemicIndex: analysis.index_glycemique || 0,
+        aliments: analysis.aliments || []
+      },
+      imageUrl
+    });
+
+    setSuccess('Analyse du repas terminée avec succès');
+    setLoading(false);
+  } catch (err) {
+    console.error('Erreur lors de l\'analyse de l\'image:', err);
+    
+    // Afficher un message d'erreur plus convivial
+    if (err.response?.status === 404) {
+      setError('Le service d\'analyse d\'image est temporairement indisponible. Veuillez essayer la saisie manuelle.');
+    } else if (err.code === 'ECONNABORTED') {
+      setError('L\'analyse prend trop de temps. Veuillez réessayer ou utiliser la saisie manuelle.');
+    } else {
+      setError('Une erreur est survenue lors de l\'analyse. Veuillez réessayer ou utiliser la saisie manuelle.');
+    }
+    
+    // Passer en mode manuel en cas d'erreur
+    setAnalysisMethod('manual');
+    setLoading(false);
+  }
+};
 
   // Le reste du code reste inchangé
   const analyzeManually = async () => {
