@@ -326,7 +326,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
 
       // Rediriger vers l'écran d'accueil après 2 secondes
       setTimeout(() => {
-        navigation.navigate('TabHome');
+        navigation.navigate('MealAnalysisScreen');
       }, 2000);
 
     } catch (err) {
