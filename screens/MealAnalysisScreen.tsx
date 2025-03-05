@@ -215,21 +215,25 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         return;
       }
 
+      // Ajouter un log pour déboguer
+      console.log('Réponse d\'analyse reçue:', JSON.stringify(response.data, null, 2));
+
       // Mettre à jour les données du repas avec les résultats de l'analyse
       setMealData({
         name: mealData.name || 'Mon repas',
         description: analysis.description || mealData.description,
-        carbs: analysis.glucides_totaux?.toString() || '',
-        proteins: analysis.proteines?.toString() || '',
-        fats: analysis.lipides?.toString() || '',
-        calories: analysis.calories?.toString() || '',
-        glycemicIndex: analysis.index_glycemique?.toString() || '',
+        carbs: analysis.glucides_totaux?.toString() || '0',
+        proteins: analysis.proteines?.toString() || '0',
+        fats: analysis.lipides?.toString() || '0',
+        calories: analysis.calories?.toString() || '0',
+        glycemicIndex: analysis.index_glycemique?.toString() || '0',
       });
 
       // Définir le résultat de l'analyse avec l'URL complète de l'image
       setAnalysisResult({
-        impact: analysis.impact_glycemique > 50 ? 'élevé' : analysis.impact_glycemique > 30 ? 'modéré' : 'faible',
-        expectedGlucoseRise: `${analysis.impact_glycemique} mg/dL`,
+        impact: analysis.impact_glycemique?.apres_repas > 50 ? 'élevé' :
+          analysis.impact_glycemique?.apres_repas > 30 ? 'modéré' : 'faible',
+        expectedGlucoseRise: `${analysis.impact_glycemique?.apres_repas || 0} mg/dL`,
         recommendations: analysis.recommandations || [],
         nutritionalInfo: {
           carbs: analysis.glucides_totaux || 0,
@@ -372,14 +376,19 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         proteines: parseFloat(mealData.proteins) || 0,
         lipides: parseFloat(mealData.fats) || 0,
         calories: parseFloat(mealData.calories) || 0,
+        fibres: analysisResult.nutritionalInfo.fibres || 0,
         aliments: analysisResult.nutritionalInfo.aliments || [],
         impact_glycemique: {
-          avant_repas: 0, // À remplir si disponible
-          apres_repas: 0  // À remplir si disponible
+          avant_repas: analysisResult.nutritionalInfo.impactAvant || 0,
+          apres_repas: analysisResult.nutritionalInfo.impactApres || 0
         },
-        recommandations: analysisResult.recommendations,
+        recommandations: analysisResult.recommendations || [],
+        ordre_consommation: analysisResult.nutritionalInfo.ordreConsommation || [],
         commentaire: ''
       };
+
+      // Ajouter un log pour déboguer
+      console.log('Données envoyées pour sauvegarde:', JSON.stringify(repasData, null, 2));
 
       // Envoyer les données au serveur
       await axios.post(`${API_URL}/api/repas`, repasData, {

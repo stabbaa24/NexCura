@@ -140,11 +140,13 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
     // Préparer les données du repas avec les nouvelles informations
     const mealData = {
       description: analysisResult.description || req.body.description || '',
+      // Correction des noms de propriétés pour correspondre à la réponse JSON
       glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
       index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
       calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
       proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
       lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
+      fibres: analysisResult.fibres || 0,
       aliments: analysisResult.aliments || [],
       impact_glycemique: {
         avant_repas: analysisResult.impact_glycemique_avant || 0,
@@ -152,6 +154,9 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
       },
       ordre_consommation: analysisResult.ordre_consommation || []
     };
+    
+    // Ajoutez également un log pour déboguer la réponse
+    console.log("Données extraites de l'analyse:", JSON.stringify(analysisResult, null, 2));
   
     // Générer des recommandations basées sur l'ordre de consommation
     let recommandations = [];
