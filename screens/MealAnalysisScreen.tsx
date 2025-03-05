@@ -35,6 +35,30 @@ const MealAnalysisScreen = ({ navigation, route }) => {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [imageUri, setImageUri] = useState(null);
   const [analysisMethod, setAnalysisMethod] = useState(null); // 'manual' ou 'image'
+  const [foodItems, setFoodItems] = useState([]);
+  const [newFoodItem, setNewFoodItem] = useState({ name: '', quantity: '' });
+
+  // Fonction pour ajouter un aliment à la liste
+  const addFoodItem = () => {
+    if (newFoodItem.name.trim() === '' || newFoodItem.quantity.trim() === '') {
+      setError('Veuillez indiquer le nom et la quantité de l\'aliment');
+      return;
+    }
+    
+    setFoodItems([...foodItems, { 
+      name: newFoodItem.name.trim(), 
+      quantity: newFoodItem.quantity.trim() 
+    }]);
+    setNewFoodItem({ name: '', quantity: '' });
+    setError('');
+  };
+
+  // Fonction pour supprimer un aliment de la liste
+  const removeFoodItem = (index) => {
+    const updatedItems = [...foodItems];
+    updatedItems.splice(index, 1);
+    setFoodItems(updatedItems);
+  };
 
   // Demander les permissions au chargement du composant
   useEffect(() => {
@@ -124,11 +148,14 @@ const MealAnalysisScreen = ({ navigation, route }) => {
 
     // Si l'URL est déjà complète, la retourner telle quelle
     if (imageUrl.startsWith('http')) {
+      console.log("URL déjà complète:", imageUrl);
       return imageUrl;
     }
 
     // Sinon, ajouter le préfixe Cloudinary
-    return `https://res.cloudinary.com/dszucpj0a/image/upload/${imageUrl}`;
+    const fullUrl = `https://res.cloudinary.com/dszucpj0a/image/upload/${imageUrl}`;
+    console.log("URL construite:", fullUrl);
+    return fullUrl;
   };
 
   // Puis modifiez la fonction analyzeImage pour utiliser cette fonction
@@ -248,6 +275,12 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         return;
       }
 
+      if (!mealData.description.trim() && foodItems.length === 0) {
+        setError('Veuillez décrire votre repas ou ajouter des aliments');
+        setLoading(false);
+        return;
+      }
+
       // Obtenir le token d'authentification
       const token = await AsyncStorage.getItem('token');
       if (!token) {
@@ -256,57 +289,50 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         return;
       }
 
-      // Obtenir les données utilisateur pour la prédiction
-      const userResponse = await axios.get(`${API_URL}/api/user/me`, {
+      // Préparer les données pour l'analyse
+      const analysisData = {
+        description: mealData.description,
+        aliments: foodItems.map(item => `${item.name} (${item.quantity}g)`)
+      };
+
+      console.log('Données envoyées pour analyse manuelle:', analysisData);
+
+      // Envoyer les données au serveur pour analyse par l'IA
+      const response = await axios.post(`${API_URL}/api/repas/analyze-manual`, analysisData, {
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });
 
-      const userData = userResponse.data;
+      
+      // Traiter la réponse
+      const { analysis } = response.data;
 
-      // Préparer les données pour l'analyse
-      const analysisData = {
-        description: mealData.description,
-        glucides_totaux: parseFloat(mealData.carbs) || 0,
-        proteines: parseFloat(mealData.proteins) || 0,
-        lipides: parseFloat(mealData.fats) || 0,
-        calories: parseFloat(mealData.calories) || 0,
-        index_glycemique: parseFloat(mealData.glycemicIndex) || 0
-      };
+      console.log('Réponse reçue pour analyse manuelle:', analysis);
 
-      // Simuler une prédiction d'impact glycémique
-      // Dans une application réelle, cela serait fait par le backend
-      const impactEstime = Math.round((analysisData.glucides_totaux * analysisData.index_glycemique) / 100);
-
-      // Générer des recommandations basées sur les données
-      const recommendations = [];
-
-      if (analysisData.index_glycemique > 70) {
-        recommendations.push('Ce repas a un index glycémique élevé. Envisagez d\'ajouter plus de fibres ou de protéines.');
-      }
-
-      recommendations.push('Ordre optimal de consommation: légumes fibreux d\'abord, puis protéines, puis glucides.');
-
-      if (userData.type_diabete === 'type1') {
-        recommendations.push('Pour le diabète de type 1, ajustez votre dose d\'insuline en fonction des glucides totaux.');
-      } else if (userData.type_diabete === 'type2') {
-        recommendations.push('Pour le diabète de type 2, envisagez une courte marche après ce repas.');
-      }
-
-      recommendations.push('Mesurez votre glycémie 2 heures après ce repas pour comprendre son impact réel.');
+      // Mettre à jour les données du repas avec les résultats de l'analyse
+      setMealData({
+        ...mealData,
+        carbs: analysis.glucides_totaux?.toString() || '',
+        proteins: analysis.proteines?.toString() || '',
+        fats: analysis.lipides?.toString() || '',
+        calories: analysis.calories?.toString() || '',
+        glycemicIndex: analysis.index_glycemique?.toString() || '',
+      });
 
       // Définir le résultat de l'analyse
       setAnalysisResult({
-        impact: impactEstime > 50 ? 'élevé' : impactEstime > 30 ? 'modéré' : 'faible',
-        expectedGlucoseRise: `${impactEstime} mg/dL`,
-        recommendations,
+        impact: analysis.impact_glycemique > 50 ? 'élevé' : analysis.impact_glycemique > 30 ? 'modéré' : 'faible',
+        expectedGlucoseRise: `${analysis.impact_glycemique} mg/dL`,
+        recommendations: analysis.recommandations || [],
         nutritionalInfo: {
-          carbs: parseFloat(mealData.carbs) || 0,
-          proteins: parseFloat(mealData.proteins) || 0,
-          fats: parseFloat(mealData.fats) || 0,
-          calories: parseFloat(mealData.calories) || 0,
-          glycemicIndex: parseFloat(mealData.glycemicIndex) || 0
+          carbs: analysis.glucides_totaux || 0,
+          proteins: analysis.proteines || 0,
+          fats: analysis.lipides || 0,
+          calories: analysis.calories || 0,
+          glycemicIndex: analysis.index_glycemique || 0,
+          aliments: foodItems.map(item => `${item.name} (${item.quantity}g)`)
         }
       });
 
@@ -381,6 +407,16 @@ const MealAnalysisScreen = ({ navigation, route }) => {
     setAnalysisMethod(null);
     setSuccess('');
     setError('');
+    setFoodItems([]);
+    setMealData({
+      name: '',
+      description: '',
+      carbs: '',
+      proteins: '',
+      fats: '',
+      calories: '',
+      glycemicIndex: '',
+    });
   };
 
   return (
@@ -519,77 +555,64 @@ const MealAnalysisScreen = ({ navigation, route }) => {
             </View>
 
             <View style={styles.formGroup}>
-              <Text style={styles.label}>Description (optionnel)</Text>
+              <Text style={styles.label}>Description du plat</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={mealData.description}
                 onChangeText={(text) => handleChange('description', text)}
-                placeholder="Décrivez votre repas (aliments, quantités...)"
+                placeholder="Ex: Salade de quinoa avec poulet et avocat"
                 multiline
-                numberOfLines={4}
+                numberOfLines={2}
               />
             </View>
 
-            <Text style={styles.sectionSubtitle}>Valeurs nutritionnelles</Text>
+            <Text style={styles.sectionSubtitle}>Aliments et quantités</Text>
 
+            {/* Liste des aliments ajoutés */}
+            {foodItems.length > 0 && (
+              <View style={styles.foodItemsContainer}>
+                {foodItems.map((item, index) => (
+                  <View key={index} style={styles.foodItemRow}>
+                    <Text style={styles.foodItemText}>{item.name} - {item.quantity}g</Text>
+                    <TouchableOpacity onPress={() => removeFoodItem(index)}>
+                      <Icon name="close-circle" size={20} color="#D32F2F" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Formulaire d'ajout d'aliment */}
             <View style={styles.rowContainer}>
-              <View style={[styles.formGroup, styles.halfWidth]}>
-                <Text style={styles.label}>Glucides (g)</Text>
+              <View style={[styles.formGroup, { flex: 2 }]}>
+                <Text style={styles.label}>Aliment</Text>
                 <TextInput
                   style={styles.input}
-                  value={mealData.carbs}
-                  onChangeText={(text) => handleChange('carbs', text)}
-                  placeholder="Ex: 45"
-                  keyboardType="numeric"
+                  value={newFoodItem.name}
+                  onChangeText={(text) => setNewFoodItem({ ...newFoodItem, name: text })}
+                  placeholder="Ex: Poulet, Riz, Avocat..."
                 />
               </View>
 
-              <View style={[styles.formGroup, styles.halfWidth]}>
-                <Text style={styles.label}>Protéines (g)</Text>
+              <View style={[styles.formGroup, { flex: 1, marginLeft: 10 }]}>
+                <Text style={styles.label}>Quantité (g)</Text>
                 <TextInput
                   style={styles.input}
-                  value={mealData.proteins}
-                  onChangeText={(text) => handleChange('proteins', text)}
-                  placeholder="Ex: 15"
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <View style={styles.rowContainer}>
-              <View style={[styles.formGroup, styles.halfWidth]}>
-                <Text style={styles.label}>Lipides (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={mealData.fats}
-                  onChangeText={(text) => handleChange('fats', text)}
-                  placeholder="Ex: 10"
-                  keyboardType="numeric"
-                />
-              </View>
-
-              <View style={[styles.formGroup, styles.halfWidth]}>
-                <Text style={styles.label}>Calories</Text>
-                <TextInput
-                  style={styles.input}
-                  value={mealData.calories}
-                  onChangeText={(text) => handleChange('calories', text)}
-                  placeholder="Ex: 330"
+                  value={newFoodItem.quantity}
+                  onChangeText={(text) => setNewFoodItem({ ...newFoodItem, quantity: text })}
+                  placeholder="Ex: 100"
                   keyboardType="numeric"
                 />
               </View>
             </View>
 
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Index glycémique estimé</Text>
-              <TextInput
-                style={styles.input}
-                value={mealData.glycemicIndex}
-                onChangeText={(text) => handleChange('glycemicIndex', text)}
-                placeholder="Ex: 55 (faible: <55, moyen: 55-70, élevé: >70)"
-                keyboardType="numeric"
-              />
-            </View>
+            <TouchableOpacity
+              style={styles.addFoodButton}
+              onPress={addFoodItem}
+            >
+              <Icon name="plus" size={16} color="#fff" />
+              <Text style={styles.addFoodButtonText}>Ajouter cet aliment</Text>
+            </TouchableOpacity>
 
             <View style={styles.buttonRow}>
               <TouchableOpacity
@@ -630,8 +653,8 @@ const MealAnalysisScreen = ({ navigation, route }) => {
               <Text style={[
                 styles.resultValue,
                 analysisResult.impact === 'élevé' ? styles.highImpact :
-                  analysisResult.impact === 'modéré' ? styles.mediumImpact :
-                    styles.lowImpact
+                analysisResult.impact === 'modéré' ? styles.mediumImpact :
+                styles.lowImpact
               ]}>
                 {analysisResult.impact}
               </Text>
@@ -714,6 +737,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
     </KeyboardAvoidingView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -980,6 +1004,39 @@ const styles = StyleSheet.create({
   foodItemsList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  foodItemsContainer: {
+    marginVertical: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 10,
+  },
+  foodItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  foodItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  addFoodButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  addFoodButtonText: {
+    color: 'white',
+    fontSize: 16,
+    marginLeft: 8,
   },
   foodItem: {
     flexDirection: 'row',
