@@ -12,17 +12,49 @@ import EducationScreen from './screens/EducationScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import ProfileScreen from './screens/ProfileScreen';
-import MealAnalysisScreen from './screens/MealAnalysisScreen'; // Import de la nouvelle page
+import MealAnalysisScreen from './screens/MealAnalysisScreen';
+import ManualGlycemieScreen from './screens/ManualGlycemieScreen'; // Import du nouvel écran
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
-// Stack pour l'écran d'accueil et l'analyse de repas
+// Stack pour l'écran d'accueil, l'analyse de repas et l'ajout de glycémie
 const HomeStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Home" component={HomeScreen} />
-    <Stack.Screen name="MealAnalysis" component={MealAnalysisScreen} />
+  <Stack.Navigator>
+    <Stack.Screen 
+      name="Home" 
+      component={HomeScreen} 
+      options={{ 
+        title: 'Accueil',
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+      }}
+    />
+    <Stack.Screen 
+      name="MealAnalysis" 
+      component={MealAnalysisScreen} 
+      options={{ 
+        title: 'Analyse de Repas',
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+      }}
+    />
+    <Stack.Screen 
+      name="ManualGlycemie" 
+      component={ManualGlycemieScreen} 
+      options={{ 
+        title: 'Ajouter une glycémie',
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+      }}
+    />
   </Stack.Navigator>
 );
 
@@ -92,6 +124,10 @@ const DrawerNavigator = () => (
       },
       drawerActiveTintColor: '#4CAF50',
       drawerInactiveTintColor: 'gray',
+      headerStyle: {
+        backgroundColor: '#4CAF50',
+      },
+      headerTintColor: '#fff',
     }}
   >
     <Drawer.Screen
@@ -116,6 +152,14 @@ const DrawerNavigator = () => (
       options={{
         title: 'Analyse de Repas',
         drawerIcon: ({ color, size }) => <Icon name="food-apple" size={size} color={color} />,
+      }}
+    />
+    <Drawer.Screen
+      name="DrawerManualGlycemie"
+      component={ManualGlycemieScreen}
+      options={{
+        title: 'Ajouter une glycémie',
+        drawerIcon: ({ color, size }) => <Icon name="needle" size={size} color={color} />,
       }}
     />
     <Drawer.Screen

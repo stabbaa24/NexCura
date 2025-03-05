@@ -170,25 +170,82 @@ const HomeScreen = () => {
 
   // Fonction pour formater les données de glycémie pour le graphique
   const formatGlycemieData = (glycemieItems) => {
+    // Définir les heures fixes pour l'axe des abscisses (toute la journée)
+    const fixedHours = [0, 3, 6, 9, 12, 15, 18, 21];
+    const fixedLabels = fixedHours.map(h => `${h}h`);
+    
+    // Initialiser un tableau de valeurs vides pour chaque heure fixe
+    const values = Array(fixedHours.length).fill(null);
+    
     if (!glycemieItems || glycemieItems.length === 0) {
       return {
-        labels: ['6h', '9h', '12h', '15h', '18h', '21h'],
-        values: [0, 0, 0, 0, 0, 0],
+        labels: fixedLabels,
+        values: values,
       };
     }
 
-    // Trier par heure
+    // Trier les mesures par heure
     const sortedItems = [...glycemieItems].sort((a, b) =>
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    // Limiter à 6 points de données maximum
-    const limitedItems = sortedItems.slice(0, 6);
+    // Placer les valeurs de glycémie dans les créneaux horaires correspondants
+    sortedItems.forEach(item => {
+      const itemDate = new Date(item.date);
+      const itemHour = itemDate.getHours();
+      
+      // Trouver l'index du créneau horaire le plus proche
+      let closestIndex = 0;
+      let minDiff = Math.abs(fixedHours[0] - itemHour);
+      
+      for (let i = 1; i < fixedHours.length; i++) {
+        const diff = Math.abs(fixedHours[i] - itemHour);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIndex = i;
+        }
+      }
+      
+      // Si l'heure est plus proche du créneau suivant, utiliser ce créneau
+      if (itemHour > fixedHours[closestIndex] && closestIndex < fixedHours.length - 1) {
+        const nextDiff = Math.abs(fixedHours[closestIndex + 1] - itemHour);
+        if (nextDiff < minDiff) {
+          closestIndex++;
+        }
+      }
+      
+      // Assigner la valeur au créneau correspondant
+      values[closestIndex] = item.valeur;
+    });
+
+    // Déterminer l'index du premier créneau avec une valeur
+    const firstValueIndex = values.findIndex(v => v !== null);
+    
+    // Si aucune valeur n'est trouvée, retourner les données vides
+    if (firstValueIndex === -1) {
+      return {
+        labels: fixedLabels,
+        values: Array(fixedHours.length).fill(0),
+      };
+    }
+    
+    // Créer un tableau de valeurs où les valeurs nulles avant la première mesure sont remplacées par 0
+    const finalValues = values.map((value, index) => {
+      if (index < firstValueIndex) {
+        return 0; // Avant la première mesure
+      }
+      return value !== null ? value : 0; // Après la première mesure
+    });
 
     return {
-      labels: limitedItems.map(g => new Date(g.date).getHours() + 'h'),
-      values: limitedItems.map(g => g.valeur),
+      labels: fixedLabels,
+      values: finalValues,
     };
+  };
+
+  // Fonction pour naviguer vers l'écran d'ajout de glycémie
+  const navigateToAddGlycemie = () => {
+    navigation.navigate('ManualGlycemie');
   };
 
   return (
@@ -206,7 +263,7 @@ const HomeScreen = () => {
       >
         {/* Carte de glycémie actuelle */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Glucose actuel</Text>
+          <Text style={styles.cardTitle}>Taux de glycémie actuel</Text>
           {loading && !refreshing ? (
             <Text style={styles.loadingText}>Chargement...</Text>
           ) : glycemieStats.lastValue > 0 ? (
@@ -274,7 +331,10 @@ const HomeScreen = () => {
             <Icon name="apple" size={24} color="#4CAF50" />
             <Text style={styles.actionText}>Ajouter un repas</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity 
+            style={styles.actionButton}
+            onPress={navigateToAddGlycemie}
+          >
             <Icon name="needle" size={24} color="#4CAF50" />
             <Text style={styles.actionText}>Ajouter glycémie</Text>
           </TouchableOpacity>
