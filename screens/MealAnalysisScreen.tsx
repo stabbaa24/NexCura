@@ -220,7 +220,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
 
       // Mettre à jour les données du repas avec les résultats de l'analyse
       setMealData({
-        name: mealData.name || 'Mon repas',
+        name: analysis.nom || mealData.name || 'Mon repas',
         description: analysis.description || mealData.description,
         carbs: analysis.glucides_totaux?.toString() || '0',
         proteins: analysis.proteines?.toString() || '0',
@@ -232,7 +232,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
       // Définir le résultat de l'analyse avec l'URL complète de l'image
       setAnalysisResult({
         impact: analysis.impact_glycemique?.apres_repas > 50 ? 'élevé' :
-          analysis.impact_glycemique?.apres_repas > 30 ? 'modéré' : 'faible',
+                analysis.impact_glycemique?.apres_repas > 30 ? 'modéré' : 'faible',
         expectedGlucoseRise: `${analysis.impact_glycemique?.apres_repas || 0} mg/dL`,
         recommendations: analysis.recommandations || [],
         nutritionalInfo: {
@@ -247,7 +247,8 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           impactApres: analysis.impact_glycemique?.apres_repas || 0,
           ordreConsommation: analysis.ordre_consommation || []
         },
-        imageUrl // Stocker le chemin relatif
+        imageUrl, // Stocker le chemin relatif
+        nom: analysis.nom || 'Mon repas' // Stocker le nom du repas
       });
 
       setSuccess('Analyse du repas terminée avec succès');

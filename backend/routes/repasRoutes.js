@@ -6,7 +6,7 @@ const auth = require('../middleware/authMiddleware');
 const { upload, uploadToCloudinary } = require('../config/cloudinary');
 const axios = require('axios');
 
-const analyzeImageWithOpenAI = async (imageUrl) => {
+const analyzeImageWithOpenAI = async (imageUrl, userData) => {
   try {
     console.log(`🔍 Vérification de la clé API OpenAI: ${process.env.OPENAI_API_KEY ? "OK" : "NON TROUVÉE"}`);
 
@@ -24,8 +24,18 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     // Définition du modèle : gpt-4o ou fallback vers gpt-3.5-turbo
     let modelToUse = "gpt-4o"; 
 
+    // Préparation des informations utilisateur pour le prompt
+    const userInfo = userData ? `
+    Informations sur l'utilisateur:
+    - Âge: ${userData.age || 'Non spécifié'} ans
+    - Genre: ${userData.genre || 'Non spécifié'}
+    - Poids: ${userData.poids || 'Non spécifié'} kg
+    - Taille: ${userData.taille || 'Non spécifié'} cm
+    - Type de diabète: ${userData.type_diabete || 'Non spécifié'}
+    - Glycémie actuelle: ${userData.lastGlycemie || 'Non spécifiée'} mg/dL
+    ` : '';
+
     // Amélioration du prompt pour obtenir des informations plus détaillées
-    // Modification du prompt pour demander un format JSON plus simple
     const requestBody = {
       model: modelToUse,
       messages: [
@@ -34,19 +44,24 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
           content: [
             { 
               type: "text", 
-              text: "Analyse cette image de repas et donne-moi les informations suivantes au format JSON strict:\n" +
-                    "- aliments: liste des aliments visibles (format string array simple)\n" +
-                    "- calories: estimation des calories totales (number)\n" +
-                    "- glucides: estimation des glucides totaux en grammes (number)\n" +
-                    "- lipides: estimation des lipides totaux en grammes (number)\n" +
-                    "- proteines: estimation des protéines totales en grammes (number)\n" +
-                    "- fibres: estimation des fibres totales en grammes (number)\n" +
-                    "- index_glycemique: estimation de l'index glycémique moyen du repas (0-100) (number)\n" +
-                    "- impact_glycemique_avant: estimation de l'impact sur la glycémie avant le repas (mg/dL) (number)\n" +
-                    "- impact_glycemique_apres: estimation de l'impact sur la glycémie après le repas (mg/dL) (number)\n" +
-                    "- ordre_consommation: ordre recommandé de consommation des aliments (format string array simple)\n" +
-                    "- description: description détaillée du repas (string)\n" +
-                    "Réponds uniquement avec un objet JSON valide sans explications supplémentaires."
+              text: `Analyse cette image de repas en tenant compte des informations suivantes sur l'utilisateur:
+              ${userInfo}
+              
+              Donne-moi les informations suivantes au format JSON strict:
+              - nom: nom du repas identifié (string)
+              - aliments: liste des aliments visibles (format string array simple)
+              - calories: estimation des calories totales (number)
+              - glucides: estimation des glucides totaux en grammes (number)
+              - lipides: estimation des lipides totaux en grammes (number)
+              - proteines: estimation des protéines totales en grammes (number)
+              - fibres: estimation des fibres totales en grammes (number)
+              - index_glycemique: estimation de l'index glycémique moyen du repas (0-100) (number)
+              - impact_glycemique_avant: estimation de la glycémie avant le repas basée sur la glycémie actuelle (mg/dL) (number)
+              - impact_glycemique_apres: estimation de la glycémie après le repas en tenant compte du profil de l'utilisateur (mg/dL) (number)
+              - ordre_consommation: ordre recommandé de consommation des aliments pour minimiser l'impact glycémique (format string array simple)
+              - description: description détaillée du repas (string)
+              
+              Réponds uniquement avec un objet JSON valide sans explications supplémentaires.`
             },
             { type: "image_url", image_url: { url: fullImageUrl } }
           ]
@@ -117,6 +132,7 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
 
     // Vérifier et normaliser les données
     return {
+      nom: analysisResult.nom || "Repas sans nom",
       aliments: Array.isArray(analysisResult.aliments) ? analysisResult.aliments : [],
       calories: Number(analysisResult.calories) || 0,
       glucides: Number(analysisResult.glucides) || 0,
@@ -132,6 +148,7 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
   } catch (error) {
     console.error("🚨 Erreur lors de l'analyse de l'image:", error.message);
     return {
+      nom: "Repas non identifié",
       aliments: [],
       calories: 0,
       glucides: 0,
@@ -162,17 +179,31 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
     const cloudinaryPath = result.secure_url.split('upload/')[1];
     console.log("Chemin Cloudinary stocké:", cloudinaryPath);
     
-    // Utiliser l'URL complète pour l'analyse
-    const analysisResult = await analyzeImageWithOpenAI(result.secure_url);
-  
     // Récupérer les données de l'utilisateur pour la prédiction
     const user = await User.findById(req.user.userId);
     
+    // Récupérer la dernière glycémie de l'utilisateur
+    const lastGlycemie = await getLastGlycemie(req.user.userId);
+    
+    // Préparer les données utilisateur pour l'analyse
+    const userData = {
+      age: user.age,
+      genre: user.genre,
+      poids: user.poids,
+      taille: user.taille,
+      type_diabete: user.type_diabete,
+      lastGlycemie: lastGlycemie
+    };
+    
+    // Utiliser l'URL complète pour l'analyse avec les données utilisateur
+    const analysisResult = await analyzeImageWithOpenAI(result.secure_url, userData);
+  
     // Ajouter un log détaillé pour déboguer
     console.log("Données extraites de l'analyse (détaillées):", JSON.stringify(analysisResult, null, 2));
     
     // Préparer les données du repas avec les nouvelles informations
     const mealData = {
+      nom: analysisResult.nom || 'Repas sans nom',
       description: analysisResult.description || req.body.description || '',
       glucides_totaux: analysisResult.glucides || 0,
       index_glycemique: analysisResult.index_glycemique || 0,
@@ -182,7 +213,7 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
       fibres: analysisResult.fibres || 0,
       aliments: analysisResult.aliments || [],
       impact_glycemique: {
-        avant_repas: analysisResult.impact_glycemique_avant || 0,
+        avant_repas: analysisResult.impact_glycemique_avant || lastGlycemie || 0,
         apres_repas: analysisResult.impact_glycemique_apres || 0
       },
       ordre_consommation: analysisResult.ordre_consommation || []
@@ -214,6 +245,7 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
       // Fournir des valeurs par défaut pour que l'interface puisse continuer à fonctionner
       imageUrl: req.file ? req.file.path : null,
       analysis: {
+        nom: "Analyse non disponible",
         description: "Analyse non disponible - Veuillez réessayer",
         glucides_totaux: 0,
         index_glycemique: 0,
@@ -275,13 +307,32 @@ const predictGlycemicImpact = async (userData, mealData) => {
 const generateRecommendations = (mealData, userData) => {
   const recommendations = [];
   
-  // Recommandations basées sur l'index glycémique
+  // Recommandations basées sur l'index glycémique et le type de diabète
   if (mealData.index_glycemique > 70) {
-    recommendations.push("Ce repas a un index glycémique élevé. Envisagez d'ajouter plus de fibres ou de protéines pour ralentir l'absorption des glucides.");
+    if (userData.type_diabete === 'type1') {
+      recommendations.push("Ce repas a un index glycémique élevé. Pour le diabète de type 1, envisagez d'ajuster votre dose d'insuline en conséquence.");
+    } else if (userData.type_diabete === 'type2') {
+      recommendations.push("Ce repas a un index glycémique élevé. Pour le diabète de type 2, ajoutez plus de fibres ou de protéines pour ralentir l'absorption des glucides.");
+    } else {
+      recommendations.push("Ce repas a un index glycémique élevé. Envisagez d'ajouter plus de fibres ou de protéines pour ralentir l'absorption des glucides.");
+    }
   }
   
   // Recommandations sur l'ordre de consommation
   recommendations.push("Ordre optimal de consommation: légumes fibreux d'abord, puis protéines, puis glucides.");
+  
+  // Recommandations basées sur l'IMC
+  const imc = userData.poids / ((userData.taille / 100) ** 2);
+  if (imc > 30) {
+    recommendations.push("Votre IMC indique une obésité. Surveillez particulièrement les portions et privilégiez les aliments à faible densité calorique.");
+  } else if (imc > 25) {
+    recommendations.push("Votre IMC indique un surpoids. Privilégiez les aliments riches en fibres et en protéines pour favoriser la satiété.");
+  }
+  
+  // Recommandations basées sur l'âge
+  if (userData.age > 65) {
+    recommendations.push("À votre âge, il est important de maintenir une glycémie stable. Évitez les repas trop riches en glucides simples.");
+  }
   
   // Recommandations basées sur le type de diabète
   if (userData.type_diabete === 'type1') {
@@ -294,6 +345,29 @@ const generateRecommendations = (mealData, userData) => {
   recommendations.push("Mesurez votre glycémie 2 heures après ce repas pour comprendre son impact réel sur votre corps.");
   
   return recommendations;
+};
+
+const getLastGlycemie = async (userId) => {
+  try {
+    // Importer le modèle Glycemie
+    const Glycemie = require('../models/Glycemie');
+    
+    // Récupérer la dernière glycémie enregistrée pour cet utilisateur
+    const lastGlycemie = await Glycemie.findOne({ user_id: userId })
+      .sort({ date: -1 })
+      .limit(1);
+    
+    if (lastGlycemie) {
+      console.log(`Glycémie trouvée pour l'utilisateur: ${lastGlycemie.valeur}`);
+      return lastGlycemie.valeur;
+    } else {
+      console.log("Aucune glycémie trouvée pour l'utilisateur, utilisation d'une valeur par défaut");
+      return 100; // Valeur par défaut en mg/dL
+    }
+  } catch (error) {
+    console.error("Erreur lors de la récupération de la dernière glycémie:", error);
+    return 100; // Valeur par défaut en cas d'erreur
+  }
 };
 
 // Route pour sauvegarder un repas après analyse
