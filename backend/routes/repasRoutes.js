@@ -11,43 +11,44 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
   try {
     // Vérifier que la clé API est correctement configurée
     if (!process.env.OPENAI_API_KEY) {
-      console.error('Erreur: Clé API OpenAI manquante');
-      throw new Error('Configuration OpenAI manquante');
+    console.error('Erreur: Clé API OpenAI manquante');
+    throw new Error('Configuration OpenAI manquante');
     }
     
     // S'assurer que l'URL complète est utilisée pour l'API OpenAI
     const fullImageUrl = imageUrl.startsWith('http') 
-      ? imageUrl 
-      : `https://res.cloudinary.com/dszucpj0a/image/upload/${imageUrl}`;
+    ? imageUrl 
+    : `https://res.cloudinary.com/dszucpj0a/image/upload/${imageUrl}`;
     
     console.log(`Tentative d'analyse de l'image: ${fullImageUrl}`);
     
+    // Mise à jour du modèle de gpt-4-vision-preview à gpt-4o
     const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: "gpt-4-vision-preview",
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Analyse cette image de repas. Identifie les aliments présents et donne-moi une estimation des valeurs nutritionnelles (calories, glucides, lipides, protéines) et l'index glycémique. Réponds au format JSON avec les propriétés: aliments (array), calories (number), glucides (number), proteines (number), lipides (number), index_glycemique (number), et description (string)." },
-              { 
-                type: "image_url", 
-                image_url: { 
-                  url: fullImageUrl 
-                } 
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-        }
-      }
+    'https://api.openai.com/v1/chat/completions',
+    {
+    model: "gpt-4o", // Modèle mis à jour
+    messages: [
+    {
+    role: "user",
+    content: [
+    { type: "text", text: "Analyse cette image de repas. Identifie les aliments présents et donne-moi une estimation des valeurs nutritionnelles (calories, glucides, lipides, protéines) et l'index glycémique. Réponds au format JSON avec les propriétés: aliments (array), calories (number), glucides (number), proteines (number), lipides (number), index_glycemique (number), et description (string)." },
+    { 
+    type: "image_url", 
+    image_url: { 
+    url: fullImageUrl 
+    } 
+    }
+    ]
+    }
+    ],
+    max_tokens: 1000
+    },
+    {
+    headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+    }
+    }
     );
 
     // Le reste du code reste inchangé
@@ -57,37 +58,43 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*?}/);
     
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0].replace(/```json\n|\n```/g, ''));
+    return JSON.parse(jsonMatch[0].replace(/```json\n|\n```/g, ''));
     } else {
-      try {
-        return JSON.parse(content);
-      } catch (e) {
-        console.error("Erreur de parsing JSON:", e);
-        return {
-          aliments: [],
-          calories: 0,
-          glucides: 0,
-          proteines: 0,
-          lipides: 0,
-          index_glycemique: 0,
-          description: "Analyse non disponible - Erreur de format"
-        };
-      }
+    try {
+    return JSON.parse(content);
+    } catch (e) {
+    console.error("Erreur de parsing JSON:", e);
+    return {
+    aliments: [],
+    calories: 0,
+    glucides: 0,
+    proteines: 0,
+    lipides: 0,
+    index_glycemique: 0,
+    description: "Analyse non disponible - Erreur de format"
+    };
+    }
     }
   } catch (error) {
     console.error('Erreur détaillée lors de l\'analyse de l\'image:', error.response?.data || error.message);
     
+    // Amélioration du logging pour mieux diagnostiquer les problèmes
+    if (error.response) {
+      console.error('Statut de la réponse:', error.response.status);
+      console.error('Données de la réponse:', error.response.data);
+    }
+    
     if (error.response?.status === 404) {
-      console.error('API endpoint non trouvé ou image non accessible');
-      return {
-        aliments: [],
-        calories: 0,
-        glucides: 0,
-        proteines: 0,
-        lipides: 0,
-        index_glycemique: 0,
-        description: "Analyse non disponible - Image non accessible"
-      };
+    console.error('API endpoint non trouvé ou image non accessible');
+    return {
+    aliments: [],
+    calories: 0,
+    glucides: 0,
+    proteines: 0,
+    lipides: 0,
+    index_glycemique: 0,
+    description: "Analyse non disponible - Image non accessible"
+    };
     }
     
     throw new Error('Erreur lors de l\'analyse de l\'image');
