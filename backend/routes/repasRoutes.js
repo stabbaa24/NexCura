@@ -272,4 +272,28 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const repasId = req.params.id;
+    
+    // Vérifier que le repas existe et appartient à l'utilisateur
+    const repas = await Repas.findOne({ 
+      _id: repasId,
+      user_id: req.user.userId 
+    });
+    
+    if (!repas) {
+      return res.status(404).json({ message: 'Repas non trouvé ou non autorisé' });
+    }
+    
+    // Supprimer le repas
+    await Repas.findByIdAndDelete(repasId);
+    
+    res.status(200).json({ message: 'Repas supprimé avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du repas:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+});
+
 module.exports = router;

@@ -324,7 +324,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
   const saveMeal = async () => {
     try {
       setLoading(true);
-  
+
       // Obtenir le token d'authentification
       const token = await AsyncStorage.getItem('token');
       if (!token) {
@@ -332,7 +332,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         setLoading(false);
         return;
       }
-  
+
       // Préparer les données du repas
       const repasData = {
         photo: analysisResult.imageUrl || null, // Déjà au format relatif
@@ -350,7 +350,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         recommandations: analysisResult.recommendations,
         commentaire: ''
       };
-  
+
       // Envoyer les données au serveur
       await axios.post(`${API_URL}/api/repas`, repasData, {
         headers: {
@@ -358,15 +358,15 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           'Authorization': `Bearer ${token}`
         }
       });
-  
+
       setSuccess('Repas sauvegardé avec succès');
       setLoading(false);
-  
+
       // Rediriger vers l'écran d'accueil après 2 secondes
       setTimeout(() => {
         navigation.navigate('MealAnalysis');
       }, 2000);
-  
+
     } catch (err) {
       console.error('Erreur lors de la sauvegarde du repas:', err);
       setError('Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.');
@@ -392,6 +392,24 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         <View style={styles.header}>
           <Text style={styles.title}>Analyse de Repas</Text>
           <View style={styles.divider} />
+        </View>
+
+        {/* Nouvelle carte d'historique */}
+        <View style={styles.historyCard}>
+          <View style={styles.historyCardContent}>
+            <Icon name="history" size={28} color="#4CAF50" style={styles.historyIcon} />
+            <View style={styles.historyTextContainer}>
+              <Text style={styles.historyTitle}>Historique des repas</Text>
+              <Text style={styles.historySubtitle}>Consultez vos analyses précédentes</Text>
+            </View>
+          </View>
+          <TouchableOpacity
+            style={styles.historyButton}
+            onPress={() => navigation.navigate('HistoricMealAnalysis')}
+          >
+            <Text style={styles.historyButtonText}>Voir l'historique</Text>
+            <Icon name="chevron-right" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
 
         {error ? (
@@ -978,6 +996,54 @@ const styles = StyleSheet.create({
   foodItemText: {
     fontSize: 14,
     color: '#2E7D32',
+  },
+  // Ajouter ces styles à la fin du fichier, dans l'objet styles
+  historyCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  historyCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  historyIcon: {
+    marginRight: 12,
+  },
+  historyTextContainer: {
+    flex: 1,
+  },
+  historyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  historySubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
+  historyButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  historyButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    marginRight: 8,
   }
 });
 export default MealAnalysisScreen;

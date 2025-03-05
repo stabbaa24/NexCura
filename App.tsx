@@ -14,6 +14,7 @@ import RegisterScreen from './screens/RegisterScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import MealAnalysisScreen from './screens/MealAnalysisScreen';
 import ManualGlycemieScreen from './screens/ManualGlycemieScreen'; // Import du nouvel écran
+import HistoricMealAnalysisScreen from './screens/HistoricMealAnalysisScreen'
 
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
@@ -22,10 +23,10 @@ const Stack = createStackNavigator();
 // Stack pour l'écran d'accueil, l'analyse de repas et l'ajout de glycémie
 const HomeStack = ({ navigation }) => (
   <Stack.Navigator>
-    <Stack.Screen 
-      name="Home" 
-      component={HomeScreen} 
-      options={{ 
+    <Stack.Screen
+      name="Home"
+      component={HomeScreen}
+      options={{
         title: 'Accueil',
         headerStyle: {
           backgroundColor: '#4CAF50',
@@ -42,10 +43,10 @@ const HomeStack = ({ navigation }) => (
         ),
       }}
     />
-    <Stack.Screen 
-      name="MealAnalysis" 
-      component={MealAnalysisScreen} 
-      options={{ 
+    <Stack.Screen
+      name="MealAnalysis"
+      component={MealAnalysisScreen}
+      options={{
         title: 'Ajouter un Repas',
         headerStyle: {
           backgroundColor: '#4CAF50',
@@ -53,11 +54,22 @@ const HomeStack = ({ navigation }) => (
         headerTintColor: '#fff',
       }}
     />
-    <Stack.Screen 
-      name="ManualGlycemie" 
-      component={ManualGlycemieScreen} 
-      options={{ 
+    <Stack.Screen
+      name="ManualGlycemie"
+      component={ManualGlycemieScreen}
+      options={{
         title: 'Ajouter une glycémie',
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+      }}
+    />
+    <Stack.Screen
+      name="HistoricMealAnalysis"
+      component={HistoricMealAnalysisScreen}
+      options={{
+        title: 'Historique des repas',
         headerStyle: {
           backgroundColor: '#4CAF50',
         },
@@ -70,10 +82,10 @@ const HomeStack = ({ navigation }) => (
 // Stack pour l'écran Calendrier
 const CalendarStack = ({ navigation }) => (
   <Stack.Navigator>
-    <Stack.Screen 
-      name="Calendar" 
-      component={CalendarScreen} 
-      options={{ 
+    <Stack.Screen
+      name="Calendar"
+      component={CalendarScreen}
+      options={{
         title: 'Calendrier',
         headerStyle: {
           backgroundColor: '#4CAF50',
@@ -96,10 +108,10 @@ const CalendarStack = ({ navigation }) => (
 // Stack pour l'écran Éducation
 const EducationStack = ({ navigation }) => (
   <Stack.Navigator>
-    <Stack.Screen 
-      name="Education" 
-      component={EducationScreen} 
-      options={{ 
+    <Stack.Screen
+      name="Education"
+      component={EducationScreen}
+      options={{
         title: 'Éducation Santé',
         headerStyle: {
           backgroundColor: '#4CAF50',
@@ -122,10 +134,10 @@ const EducationStack = ({ navigation }) => (
 // Stack pour l'écran Profil
 const ProfileStack = ({ navigation }) => (
   <Stack.Navigator>
-    <Stack.Screen 
-      name="Profile" 
-      component={ProfileScreen} 
-      options={{ 
+    <Stack.Screen
+      name="Profile"
+      component={ProfileScreen}
+      options={{
         title: 'Profil',
         headerStyle: {
           backgroundColor: '#4CAF50',
