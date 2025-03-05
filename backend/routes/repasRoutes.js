@@ -11,7 +11,7 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     console.log(`🔍 Vérification de la clé API OpenAI: ${process.env.OPENAI_API_KEY ? "OK" : "NON TROUVÉE"}`);
 
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error('❌ Clé API OpenAI manquante. Ajoutez-la dans les variables d'environnement.');
+      throw new Error('❌ Clé API OpenAI manquante. Ajoutez-la dans les variables d\'environnement.');
     }
 
     // URL complète de l'image
