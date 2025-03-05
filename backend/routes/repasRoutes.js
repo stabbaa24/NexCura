@@ -9,6 +9,8 @@ const axios = require('axios');
 // Service pour analyser l'image avec OpenAI
 const analyzeImageWithOpenAI = async (imageUrl) => {
   try {
+    console.log(`Clé API utilisée: ${process.env.OPENAI_API_KEY ? "OK" : "MANQUANTE"}`);
+    console.log(`🔑 Clé API utilisée: ${process.env.OPENAI_API_KEY}`);
     // Vérifier que la clé API est correctement configurée
     if (!process.env.OPENAI_API_KEY) {
       console.error('Erreur: Clé API OpenAI manquante');
