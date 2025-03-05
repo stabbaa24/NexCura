@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, getFocusedRouteNameFromRoute } from '@react-navigation/native';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -20,7 +20,7 @@ const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
 // Stack pour l'écran d'accueil, l'analyse de repas et l'ajout de glycémie
-const HomeStack = () => (
+const HomeStack = ({ navigation }) => (
   <Stack.Navigator>
     <Stack.Screen 
       name="Home" 
@@ -31,13 +31,22 @@ const HomeStack = () => (
           backgroundColor: '#4CAF50',
         },
         headerTintColor: '#fff',
+        headerLeft: () => (
+          <Icon
+            name="menu"
+            size={28}
+            color="#fff"
+            style={{ marginLeft: 15 }}
+            onPress={() => navigation.openDrawer()}
+          />
+        ),
       }}
     />
     <Stack.Screen 
       name="MealAnalysis" 
       component={MealAnalysisScreen} 
       options={{ 
-        title: 'Analyse de Repas',
+        title: 'Ajouter un Repas',
         headerStyle: {
           backgroundColor: '#4CAF50',
         },
@@ -53,6 +62,84 @@ const HomeStack = () => (
           backgroundColor: '#4CAF50',
         },
         headerTintColor: '#fff',
+      }}
+    />
+  </Stack.Navigator>
+);
+
+// Stack pour l'écran Calendrier
+const CalendarStack = ({ navigation }) => (
+  <Stack.Navigator>
+    <Stack.Screen 
+      name="Calendar" 
+      component={CalendarScreen} 
+      options={{ 
+        title: 'Calendrier',
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+        headerLeft: () => (
+          <Icon
+            name="menu"
+            size={28}
+            color="#fff"
+            style={{ marginLeft: 15 }}
+            onPress={() => navigation.openDrawer()}
+          />
+        ),
+      }}
+    />
+  </Stack.Navigator>
+);
+
+// Stack pour l'écran Éducation
+const EducationStack = ({ navigation }) => (
+  <Stack.Navigator>
+    <Stack.Screen 
+      name="Education" 
+      component={EducationScreen} 
+      options={{ 
+        title: 'Éducation Santé',
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+        headerLeft: () => (
+          <Icon
+            name="menu"
+            size={28}
+            color="#fff"
+            style={{ marginLeft: 15 }}
+            onPress={() => navigation.openDrawer()}
+          />
+        ),
+      }}
+    />
+  </Stack.Navigator>
+);
+
+// Stack pour l'écran Profil
+const ProfileStack = ({ navigation }) => (
+  <Stack.Navigator>
+    <Stack.Screen 
+      name="Profile" 
+      component={ProfileScreen} 
+      options={{ 
+        title: 'Profil',
+        headerStyle: {
+          backgroundColor: '#4CAF50',
+        },
+        headerTintColor: '#fff',
+        headerLeft: () => (
+          <Icon
+            name="menu"
+            size={28}
+            color="#fff"
+            style={{ marginLeft: 15 }}
+            onPress={() => navigation.openDrawer()}
+          />
+        ),
       }}
     />
   </Stack.Navigator>
@@ -83,9 +170,9 @@ const MainApp = () => (
     })}
   >
     <Tab.Screen name="TabHome" component={HomeStack} options={{ tabBarLabel: 'Accueil' }} />
-    <Tab.Screen name="TabCalendar" component={CalendarScreen} options={{ tabBarLabel: 'Calendrier' }} />
-    <Tab.Screen name="TabEducation" component={EducationScreen} options={{ tabBarLabel: 'Éducation' }} />
-    <Tab.Screen name="TabProfile" component={ProfileScreen} options={{ tabBarLabel: 'Profil' }} />
+    <Tab.Screen name="TabCalendar" component={CalendarStack} options={{ tabBarLabel: 'Calendrier' }} />
+    <Tab.Screen name="TabEducation" component={EducationStack} options={{ tabBarLabel: 'Éducation' }} />
+    <Tab.Screen name="TabProfile" component={ProfileStack} options={{ tabBarLabel: 'Profil' }} />
   </Tab.Navigator>
 );
 
@@ -136,6 +223,7 @@ const DrawerNavigator = () => (
       options={{
         title: 'Accueil',
         drawerIcon: ({ color, size }) => <Icon name="home" size={size} color={color} />,
+        headerShown: false, // Masquer l'en-tête du Drawer pour cet écran
       }}
     />
     <Drawer.Screen
