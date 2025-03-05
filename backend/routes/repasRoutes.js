@@ -25,6 +25,7 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     let modelToUse = "gpt-4o"; 
 
     // Amélioration du prompt pour obtenir des informations plus détaillées
+    // Modification du prompt pour demander un format JSON plus simple
     const requestBody = {
       model: modelToUse,
       messages: [
@@ -34,18 +35,18 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
             { 
               type: "text", 
               text: "Analyse cette image de repas et donne-moi les informations suivantes au format JSON strict:\n" +
-                    "- aliments (array): liste détaillée des aliments visibles avec estimation des quantités en grammes\n" +
-                    "- calories (number): estimation des calories totales\n" +
-                    "- glucides (number): estimation des glucides totaux en grammes\n" +
-                    "- lipides (number): estimation des lipides totaux en grammes\n" +
-                    "- proteines (number): estimation des protéines totales en grammes\n" +
-                    "- fibres (number): estimation des fibres totales en grammes\n" +
-                    "- index_glycemique (number): estimation de l'index glycémique moyen du repas (0-100)\n" +
-                    "- impact_glycemique_avant (number): estimation de l'impact sur la glycémie avant le repas (mg/dL)\n" +
-                    "- impact_glycemique_apres (number): estimation de l'impact sur la glycémie après le repas (mg/dL)\n" +
-                    "- ordre_consommation (array): ordre recommandé de consommation des aliments pour minimiser l'impact glycémique\n" +
-                    "- description (string): description détaillée du repas\n" +
-                    "Réponds uniquement avec un objet JSON valide."
+                    "- aliments: liste des aliments visibles (format string array simple)\n" +
+                    "- calories: estimation des calories totales (number)\n" +
+                    "- glucides: estimation des glucides totaux en grammes (number)\n" +
+                    "- lipides: estimation des lipides totaux en grammes (number)\n" +
+                    "- proteines: estimation des protéines totales en grammes (number)\n" +
+                    "- fibres: estimation des fibres totales en grammes (number)\n" +
+                    "- index_glycemique: estimation de l'index glycémique moyen du repas (0-100) (number)\n" +
+                    "- impact_glycemique_avant: estimation de l'impact sur la glycémie avant le repas (mg/dL) (number)\n" +
+                    "- impact_glycemique_apres: estimation de l'impact sur la glycémie après le repas (mg/dL) (number)\n" +
+                    "- ordre_consommation: ordre recommandé de consommation des aliments (format string array simple)\n" +
+                    "- description: description détaillée du repas (string)\n" +
+                    "Réponds uniquement avec un objet JSON valide sans explications supplémentaires."
             },
             { type: "image_url", image_url: { url: fullImageUrl } }
           ]
@@ -88,18 +89,48 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
       }
     }
 
-    // Extraction du contenu JSON
+    // Extraction du contenu JSON avec une méthode plus robuste
     const content = response.data.choices[0].message.content;
-    console.log("📝 Réponse OpenAI reçue:", content.substring(0, 100) + "...");
+    console.log("📝 Réponse OpenAI reçue:", content.substring(0, 200) + "...");
 
-    const jsonMatch = content.match(/{[\s\S]*?}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    } else {
-      throw new Error("❌ Erreur de parsing JSON dans la réponse de OpenAI.");
+    // Amélioration du parsing JSON
+    let analysisResult;
+    try {
+      // Essayer d'abord de parser directement le contenu complet
+      analysisResult = JSON.parse(content);
+    } catch (parseError) {
+      console.log("⚠️ Erreur de parsing direct, tentative d'extraction du JSON...");
+      
+      // Si échec, essayer d'extraire le JSON avec une regex plus robuste
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          analysisResult = JSON.parse(jsonMatch[0]);
+        } catch (nestedError) {
+          console.error("❌ Échec de l'extraction JSON:", nestedError);
+          throw new Error("Impossible de parser la réponse JSON d'OpenAI");
+        }
+      } else {
+        throw new Error("Aucun objet JSON trouvé dans la réponse d'OpenAI");
+      }
     }
+
+    // Vérifier et normaliser les données
+    return {
+      aliments: Array.isArray(analysisResult.aliments) ? analysisResult.aliments : [],
+      calories: Number(analysisResult.calories) || 0,
+      glucides: Number(analysisResult.glucides) || 0,
+      lipides: Number(analysisResult.lipides) || 0,
+      proteines: Number(analysisResult.proteines) || 0,
+      fibres: Number(analysisResult.fibres) || 0,
+      index_glycemique: Number(analysisResult.index_glycemique) || 0,
+      impact_glycemique_avant: Number(analysisResult.impact_glycemique_avant) || 0,
+      impact_glycemique_apres: Number(analysisResult.impact_glycemique_apres) || 0,
+      ordre_consommation: Array.isArray(analysisResult.ordre_consommation) ? analysisResult.ordre_consommation : [],
+      description: analysisResult.description || "Analyse du repas"
+    };
   } catch (error) {
-    console.error("🚨 Erreur lors de l'analyse de l'image:", error.response?.data || error.message);
+    console.error("🚨 Erreur lors de l'analyse de l'image:", error.message);
     return {
       aliments: [],
       calories: 0,
@@ -137,15 +168,17 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
     // Récupérer les données de l'utilisateur pour la prédiction
     const user = await User.findById(req.user.userId);
     
+    // Ajouter un log détaillé pour déboguer
+    console.log("Données extraites de l'analyse (détaillées):", JSON.stringify(analysisResult, null, 2));
+    
     // Préparer les données du repas avec les nouvelles informations
     const mealData = {
       description: analysisResult.description || req.body.description || '',
-      // Correction des noms de propriétés pour correspondre à la réponse JSON
-      glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
-      index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
-      calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
-      proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
-      lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
+      glucides_totaux: analysisResult.glucides || 0,
+      index_glycemique: analysisResult.index_glycemique || 0,
+      calories: analysisResult.calories || 0,
+      proteines: analysisResult.proteines || 0,
+      lipides: analysisResult.lipides || 0,
       fibres: analysisResult.fibres || 0,
       aliments: analysisResult.aliments || [],
       impact_glycemique: {
@@ -154,9 +187,6 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
       },
       ordre_consommation: analysisResult.ordre_consommation || []
     };
-    
-    // Ajoutez également un log pour déboguer la réponse
-    console.log("Données extraites de l'analyse:", JSON.stringify(analysisResult, null, 2));
   
     // Générer des recommandations basées sur l'ordre de consommation
     let recommandations = [];
@@ -173,13 +203,33 @@ router.post('/analyze', auth, upload.single('image'), async (req, res) => {
       imageUrl: cloudinaryPath, // Stocker seulement le chemin relatif
       analysis: {
         ...mealData,
-        impact_glycemique: mealData.impact_glycemique.apres_repas || predictGlycemicImpact(user, mealData).impact_estime,
         recommandations: recommandations
       }
     });
   } catch (error) {
     console.error('Erreur lors de l\'analyse du repas:', error);
-    res.status(500).json({ message: 'Erreur lors de l\'analyse du repas', error: error.message });
+    res.status(500).json({ 
+      message: 'Erreur lors de l\'analyse du repas', 
+      error: error.message,
+      // Fournir des valeurs par défaut pour que l'interface puisse continuer à fonctionner
+      imageUrl: req.file ? req.file.path : null,
+      analysis: {
+        description: "Analyse non disponible - Veuillez réessayer",
+        glucides_totaux: 0,
+        index_glycemique: 0,
+        calories: 0,
+        proteines: 0,
+        lipides: 0,
+        fibres: 0,
+        aliments: [],
+        impact_glycemique: {
+          avant_repas: 0,
+          apres_repas: 0
+        },
+        ordre_consommation: [],
+        recommandations: ["Impossible d'analyser ce repas. Veuillez réessayer ou saisir les informations manuellement."]
+      }
+    });
   }
 });
 
