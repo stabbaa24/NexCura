@@ -6,119 +6,94 @@ const auth = require('../middleware/authMiddleware');
 const { upload, uploadToCloudinary } = require('../config/cloudinary');
 const axios = require('axios');
 
-// Service pour analyser l'image avec OpenAI
 const analyzeImageWithOpenAI = async (imageUrl) => {
   try {
-    console.log(`Clé API utilisée: ${process.env.OPENAI_API_KEY ? "OK" : "MANQUANTE"}`);
-    console.log(`🔑 Clé API utilisée: ${process.env.OPENAI_API_KEY}`);
-    // Vérifier que la clé API est correctement configurée
+    console.log(`🔍 Vérification de la clé API OpenAI: ${process.env.OPENAI_API_KEY ? "OK" : "NON TROUVÉE"}`);
+
     if (!process.env.OPENAI_API_KEY) {
-      console.error('Erreur: Clé API OpenAI manquante');
-      throw new Error('Configuration OpenAI manquante');
+      throw new Error('❌ Clé API OpenAI manquante. Ajoutez-la dans les variables d’environnement.');
     }
-    
-    // Afficher les premiers caractères de la clé API pour le débogage (sécurisé)
-    const apiKeyStart = process.env.OPENAI_API_KEY.substring(0, 7);
-    const apiKeyEnd = process.env.OPENAI_API_KEY.substring(process.env.OPENAI_API_KEY.length - 4);
-    console.log(`Utilisation de la clé API: ${apiKeyStart}...${apiKeyEnd}`);
-    
-    // S'assurer que l'URL complète est utilisée pour l'API OpenAI
+
+    // URL complète de l'image
     const fullImageUrl = imageUrl.startsWith('http') 
       ? imageUrl 
       : `https://res.cloudinary.com/dszucpj0a/image/upload/${imageUrl}`;
-    
-    console.log(`Tentative d'analyse de l'image: ${fullImageUrl}`);
-    
-    // Mise à jour du modèle de gpt-4-vision-preview à gpt-4o
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: "gpt-4o", // Modèle mis à jour
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Analyse cette image de repas. Identifie les aliments présents et donne-moi une estimation des valeurs nutritionnelles (calories, glucides, lipides, protéines) et l'index glycémique. Réponds au format JSON avec les propriétés: aliments (array), calories (number), glucides (number), proteines (number), lipides (number), index_glycemique (number), et description (string)." },
-              { 
-                type: "image_url", 
-                image_url: { 
-                  url: fullImageUrl 
-                } 
-              }
-            ]
-          }
-        ],
-        max_tokens: 1000
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-        }
-      }
-    );
 
-    // Le reste du code reste inchangé
-    const content = response.data.choices[0].message.content;
-    console.log("Réponse OpenAI reçue:", content.substring(0, 100) + "...");
-    
-    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/) || content.match(/{[\s\S]*?}/);
-    
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0].replace(/```json\n|\n```/g, ''));
-    } else {
-      try {
-        return JSON.parse(content);
-      } catch (e) {
-        console.error("Erreur de parsing JSON:", e);
-        return {
-          aliments: [],
-          calories: 0,
-          glucides: 0,
-          proteines: 0,
-          lipides: 0,
-          index_glycemique: 0,
-          description: "Analyse non disponible - Erreur de format"
-        };
+    console.log(`📷 Analyse de l'image: ${fullImageUrl}`);
+
+    // Définition du modèle : gpt-4o ou fallback vers gpt-3.5-turbo
+    let modelToUse = "gpt-4o"; 
+
+    const requestBody = {
+      model: modelToUse,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: "Analyse cette image de repas et donne-moi les valeurs nutritionnelles en JSON: aliments (array), calories (number), glucides (number), lipides (number), protéines (number), fibres (number), index_glycemique (number)." },
+            { type: "image_url", image_url: { url: fullImageUrl } }
+          ]
+        }
+      ],
+      max_tokens: 800
+    };
+
+    // Envoi de la requête OpenAI
+    let response;
+    try {
+      response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        requestBody,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+          }
+        }
+      );
+    } catch (error) {
+      if (error.response?.status === 429) {
+        console.warn("⚠ Quota dépassé, passage à gpt-3.5-turbo...");
+        modelToUse = "gpt-3.5-turbo";
+        requestBody.model = modelToUse;
+        
+        response = await axios.post(
+          'https://api.openai.com/v1/chat/completions',
+          requestBody,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
+            }
+          }
+        );
+      } else {
+        throw error;
       }
+    }
+
+    // Extraction du contenu JSON
+    const content = response.data.choices[0].message.content;
+    console.log("📝 Réponse OpenAI reçue:", content.substring(0, 100) + "...");
+
+    const jsonMatch = content.match(/{[\s\S]*?}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    } else {
+      throw new Error("❌ Erreur de parsing JSON dans la réponse de OpenAI.");
     }
   } catch (error) {
-    console.error('Erreur détaillée lors de l\'analyse de l\'image:', error.response?.data || error.message);
-    
-    // Amélioration du logging pour mieux diagnostiquer les problèmes
-    if (error.response) {
-      console.error('Statut de la réponse:', error.response.status);
-      console.error('Données de la réponse:', error.response.data);
-      
-      // Gestion spécifique des erreurs d'authentification
-      if (error.response.status === 401) {
-        console.error('Erreur d\'authentification avec l\'API OpenAI. Vérifiez votre clé API.');
-        return {
-          aliments: [],
-          calories: 0,
-          glucides: 0,
-          proteines: 0,
-          lipides: 0,
-          index_glycemique: 0,
-          description: "Analyse non disponible - Erreur d'authentification API"
-        };
-      }
-    }
-    
-    if (error.response?.status === 404) {
-      console.error('API endpoint non trouvé ou image non accessible');
-      return {
-        aliments: [],
-        calories: 0,
-        glucides: 0,
-        proteines: 0,
-        lipides: 0,
-        index_glycemique: 0,
-        description: "Analyse non disponible - Image non accessible"
-      };
-    }
-    
-    throw new Error('Erreur lors de l\'analyse de l\'image');
+    console.error("🚨 Erreur lors de l'analyse de l'image:", error.response?.data || error.message);
+    return {
+      aliments: [],
+      calories: 0,
+      glucides: 0,
+      lipides: 0,
+      proteines: 0,
+      fibres: 0,
+      index_glycemique: 0,
+      description: "Analyse non disponible - Erreur OpenAI"
+    };
   }
 };
 
