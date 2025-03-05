@@ -9,19 +9,25 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator
+  ActivityIndicator,
+  RefreshControl // Ajout du composant RefreshControl
 } from 'react-native';
+// Importer Picker depuis le package dédié
+import { Picker } from '@react-native-picker/picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Assurez-vous d'avoir cette dépendance
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const ProfileScreen = () => {
   // État pour les données utilisateur
   const [userData, setUserData] = useState({
     nom: '',
+    prenom: '', 
     email: '',
     mot_de_passe: '',
     nouveau_mot_de_passe: '',
     confirmer_mot_de_passe: '',
+    age: '', 
+    genre: '', 
     type_diabete: '',
     taille: '',
     poids: '',
@@ -32,9 +38,10 @@ const ProfileScreen = () => {
   });
   
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // État pour le rafraîchissement
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [editMode, setEditMode] = useState(false); // Nouvel état pour le mode édition
+  const [editMode, setEditMode] = useState(false);
 
   // Récupérer les données utilisateur au chargement du composant
   useEffect(() => {
@@ -44,12 +51,13 @@ const ProfileScreen = () => {
   // Fonction pour récupérer les données utilisateur
   const fetchUserData = async () => {
     try {
-      setLoading(true);
+      if (!refreshing) setLoading(true);
       const token = await AsyncStorage.getItem('token');
       
       if (!token) {
         setError('Vous devez être connecté pour accéder à cette page');
         setLoading(false);
+        setRefreshing(false);
         return;
       }
 
@@ -79,8 +87,11 @@ const ProfileScreen = () => {
       setUserData({
         ...userData,
         nom: data.nom || '',
+        prenom: data.prenom || '', 
         email: data.email || '',
         mot_de_passe: '', // Ne pas afficher le mot de passe
+        age: data.age ? data.age.toString() : '', 
+        genre: data.genre || '', 
         type_diabete: data.type_diabete || '',
         taille: data.taille ? data.taille.toString() : '',
         poids: data.poids ? data.poids.toString() : '',
@@ -91,11 +102,28 @@ const ProfileScreen = () => {
       });
       
       setLoading(false);
+      setRefreshing(false);
+      
+      // Afficher un message de succès lors du rafraîchissement
+      if (refreshing) {
+        setSuccess('Données actualisées');
+        setTimeout(() => {
+          setSuccess('');
+        }, 2000);
+      }
     } catch (err) {
       console.error('Erreur lors de la récupération des données utilisateur:', err);
       setError('Impossible de récupérer vos informations. Veuillez réessayer.');
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  // Fonction pour gérer le rafraîchissement
+  const onRefresh = () => {
+    setRefreshing(true);
+    setError('');
+    fetchUserData();
   };
 
   // Fonction pour mettre à jour les données utilisateur
@@ -116,7 +144,10 @@ const ProfileScreen = () => {
       // Préparer les données pour l'API
       const dataToUpdate = {
         nom: userData.nom,
+        prenom: userData.prenom,
         email: userData.email,
+        age: userData.age ? parseFloat(userData.age) : undefined,
+        genre: userData.genre,
         type_diabete: userData.type_diabete,
         taille: userData.taille ? parseFloat(userData.taille) : undefined,
         poids: userData.poids ? parseFloat(userData.poids) : undefined,
@@ -213,7 +244,7 @@ const ProfileScreen = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#4CAF50" />
@@ -227,10 +258,22 @@ const ProfileScreen = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#4CAF50"]}
+            tintColor="#4CAF50"
+            title="Actualisation..."
+            titleColor="#4CAF50"
+          />
+        }
+      >
         <View style={styles.headerContainer}>
           <View style={styles.header}>
-            <Text style={styles.title}>Mon Profil</Text>
+            <Text style={styles.title}>Mes Informations</Text>
             <View style={styles.divider} />
           </View>
           <TouchableOpacity 
@@ -244,7 +287,7 @@ const ProfileScreen = () => {
             />
           </TouchableOpacity>
         </View>
-      
+        
         {error ? (
           <View style={styles.messageContainer}>
             <Text style={styles.errorText}>{error}</Text>
@@ -256,19 +299,32 @@ const ProfileScreen = () => {
             <Text style={styles.successText}>{success}</Text>
           </View>
         ) : null}
-      
+        
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Informations personnelles</Text>
           
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Nom</Text>
-            <TextInput
-              style={[styles.input, !editMode && styles.disabledInput]}
-              value={userData.nom}
-              onChangeText={(text) => handleChange('nom', text)}
-              placeholder="Votre nom"
-              editable={editMode}
-            />
+          <View style={styles.rowContainer}>
+            <View style={[styles.formGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Nom</Text>
+              <TextInput
+                style={[styles.input, !editMode && styles.disabledInput]}
+                value={userData.nom}
+                onChangeText={(text) => handleChange('nom', text)}
+                placeholder="Votre nom"
+                editable={editMode}
+              />
+            </View>
+            
+            <View style={[styles.formGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Prénom</Text>
+              <TextInput
+                style={[styles.input, !editMode && styles.disabledInput]}
+                value={userData.prenom}
+                onChangeText={(text) => handleChange('prenom', text)}
+                placeholder="Votre prénom"
+                editable={editMode}
+              />
+            </View>
           </View>
           
           <View style={styles.formGroup}>
@@ -282,6 +338,45 @@ const ProfileScreen = () => {
               autoCapitalize="none"
               editable={editMode}
             />
+          </View>
+          
+          <View style={styles.rowContainer}>
+            <View style={[styles.formGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Âge</Text>
+              <TextInput
+                style={[styles.input, !editMode && styles.disabledInput]}
+                value={userData.age}
+                onChangeText={(text) => handleChange('age', text)}
+                placeholder="Votre âge"
+                keyboardType="numeric"
+                editable={editMode}
+              />
+            </View>
+            
+            <View style={[styles.formGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Genre</Text>
+              {editMode ? (
+                <View style={[styles.input, styles.pickerContainer]}>
+                  <Picker
+                    selectedValue={userData.genre}
+                    onValueChange={(value) => handleChange('genre', value)}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Sélectionner" value="" />
+                    <Picker.Item label="Homme" value="homme" />
+                    <Picker.Item label="Femme" value="femme" />
+                    <Picker.Item label="Autre" value="autre" />
+                  </Picker>
+                </View>
+              ) : (
+                <TextInput
+                  style={[styles.input, styles.disabledInput]}
+                  value={userData.genre}
+                  placeholder="Non spécifié"
+                  editable={false}
+                />
+              )}
+            </View>
           </View>
         </View>
         
@@ -407,6 +502,7 @@ const ProfileScreen = () => {
   );
 };
 
+// Les styles restent inchangés
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -512,6 +608,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     color: '#666',
     borderColor: '#eee',
+  },
+  pickerContainer: {
+    padding: 0,
+    justifyContent: 'center',
+  },
+  picker: {
+    height: 50,
   },
   rowContainer: {
     flexDirection: 'row',

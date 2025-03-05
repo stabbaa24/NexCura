@@ -155,9 +155,12 @@ router.put('/update', auth, async (req, res) => {
   try {
     const { 
       nom, 
+      prenom, // Nouveau champ
       email, 
       mot_de_passe_actuel, 
       nouveau_mot_de_passe, 
+      age, // Nouveau champ
+      genre, // Nouveau champ
       type_diabete, 
       taille, 
       poids, 
@@ -175,7 +178,10 @@ router.put('/update', auth, async (req, res) => {
     
     // Mettre à jour les champs simples s'ils sont fournis
     if (nom !== undefined) updateData.nom = nom;
+    if (prenom !== undefined) updateData.prenom = prenom; // Nouveau champ
     if (email !== undefined) updateData.email = email;
+    if (age !== undefined) updateData.age = age; // Nouveau champ
+    if (genre !== undefined) updateData.genre = genre; // Nouveau champ
     if (type_diabete !== undefined) updateData.type_diabete = type_diabete;
     if (taille !== undefined) updateData.taille = taille;
     if (poids !== undefined) updateData.poids = poids;

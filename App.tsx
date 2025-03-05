@@ -130,7 +130,7 @@ const DrawerNavigator = () => (
       name="DrawerProfile"
       component={ProfileScreen}
       options={{
-        title: 'Mon Profil',
+        title: 'Profil',
         drawerIcon: ({ color, size }) => <Icon name="account" size={size} color={color} />,
       }}
     />

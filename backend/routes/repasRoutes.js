@@ -15,13 +15,17 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
       throw new Error('Configuration OpenAI manquante');
     }
     
-    console.log(`Tentative d'analyse de l'image: ${imageUrl}`);
+    // S'assurer que l'URL complète est utilisée pour l'API OpenAI
+    const fullImageUrl = imageUrl.startsWith('http') 
+      ? imageUrl 
+      : `https://res.cloudinary.com/dszucpj0a/image/upload/${imageUrl}`;
     
-    // Utiliser le modèle correct et s'assurer que l'URL est accessible
+    console.log(`Tentative d'analyse de l'image: ${fullImageUrl}`);
+    
     const response = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: "gpt-4-vision-preview",  // Vérifier que ce modèle est disponible dans votre compte
+        model: "gpt-4-vision-preview",
         messages: [
           {
             role: "user",
@@ -30,7 +34,7 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
               { 
                 type: "image_url", 
                 image_url: { 
-                  url: imageUrl 
+                  url: fullImageUrl 
                 } 
               }
             ]
@@ -46,7 +50,7 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
       }
     );
 
-    // Extraire le JSON de la réponse textuelle
+    // Le reste du code reste inchangé
     const content = response.data.choices[0].message.content;
     console.log("Réponse OpenAI reçue:", content.substring(0, 100) + "...");
     
@@ -55,12 +59,10 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0].replace(/```json\n|\n```/g, ''));
     } else {
-      // Tenter de parser directement si le format n'est pas dans un bloc de code
       try {
         return JSON.parse(content);
       } catch (e) {
         console.error("Erreur de parsing JSON:", e);
-        // Créer un objet structuré manuellement si le parsing échoue
         return {
           aliments: [],
           calories: 0,
@@ -75,9 +77,8 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
   } catch (error) {
     console.error('Erreur détaillée lors de l\'analyse de l\'image:', error.response?.data || error.message);
     
-    // Gestion de secours en cas d'erreur avec l'API
     if (error.response?.status === 404) {
-      console.error('API endpoint non trouvé ou modèle non disponible');
+      console.error('API endpoint non trouvé ou image non accessible');
       return {
         aliments: [],
         calories: 0,
@@ -85,14 +86,13 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
         proteines: 0,
         lipides: 0,
         index_glycemique: 0,
-        description: "Analyse non disponible - Service temporairement indisponible"
+        description: "Analyse non disponible - Image non accessible"
       };
     }
     
     throw new Error('Erreur lors de l\'analyse de l\'image');
   }
 };
-
 
 // Service pour prédire l'impact sur la glycémie
 const predictGlycemicImpact = async (userData, mealData) => {
@@ -159,52 +159,54 @@ const generateRecommendations = (mealData, userData) => {
 
 // Route pour ajouter un repas avec analyse d'image
 router.post('/analyze', auth, upload.single('image'), async (req, res) => {
-    try {
+  try {
     // Vérifier si une image a été téléchargée
     if (!req.file) {
-    return res.status(400).json({ message: 'Aucune image fournie' });
+      return res.status(400).json({ message: 'Aucune image fournie' });
     }
   
     // Uploader l'image vers Cloudinary
     const result = await uploadToCloudinary(req.file.path);
-    const imageUrl = result.secure_url;
-  
-    // Le reste de votre code d'analyse...
-    // Analyser l'image avec OpenAI
-    const analysisResult = await analyzeImageWithOpenAI(imageUrl);
+    
+    // Extraire seulement la partie de l'URL après "upload/"
+    const cloudinaryPath = result.secure_url.split('upload/')[1];
+    console.log("Chemin Cloudinary stocké:", cloudinaryPath);
+    
+    // Utiliser l'URL complète pour l'analyse
+    const analysisResult = await analyzeImageWithOpenAI(result.secure_url);
   
     // Récupérer les données de l'utilisateur pour la prédiction
     const user = await User.findById(req.user.userId);
     
     // Préparer les données du repas
     const mealData = {
-    description: analysisResult.description || req.body.description || '',
-    glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
-    index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
-    calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
-    proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
-    lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
-    aliments: analysisResult.aliments || []
+      description: analysisResult.description || req.body.description || '',
+      glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
+      index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
+      calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
+      proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
+      lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
+      aliments: analysisResult.aliments || []
     };
   
     // Prédire l'impact glycémique
     const impactPrediction = await predictGlycemicImpact(user, mealData);
   
-    // Renvoyer les résultats de l'analyse
+    // Renvoyer les résultats de l'analyse avec le chemin relatif de l'image
     res.status(200).json({
-    message: 'Analyse du repas réussie',
-    imageUrl,
-    analysis: {
-    ...mealData,
-    impact_glycemique: impactPrediction.impact_estime,
-    recommandations: impactPrediction.recommandations
-    }
+      message: 'Analyse du repas réussie',
+      imageUrl: cloudinaryPath, // Stocker seulement le chemin relatif
+      analysis: {
+        ...mealData,
+        impact_glycemique: impactPrediction.impact_estime,
+        recommandations: impactPrediction.recommandations
+      }
     });
-    } catch (error) {
+  } catch (error) {
     console.error('Erreur lors de l\'analyse du repas:', error);
     res.status(500).json({ message: 'Erreur lors de l\'analyse du repas', error: error.message });
-    }
-  });
+  }
+});
 
 // Route pour sauvegarder un repas après analyse
 router.post('/', auth, async (req, res) => {
