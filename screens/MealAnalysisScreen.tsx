@@ -358,7 +358,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
   const saveMeal = async () => {
     try {
       setLoading(true);
-
+  
       // Obtenir le token d'authentification
       const token = await AsyncStorage.getItem('token');
       if (!token) {
@@ -366,11 +366,12 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         setLoading(false);
         return;
       }
-
+  
       // Préparer les données du repas
       const repasData = {
         photo: analysisResult.imageUrl || null, // Déjà au format relatif
-        description: mealData.description || mealData.name,
+        nom: mealData.name || 'Mon repas',      // Ajout du nom du repas
+        description: mealData.description || 'Aucune description',
         index_glycemique: parseFloat(mealData.glycemicIndex) || 0,
         glucides_totaux: parseFloat(mealData.carbs) || 0,
         proteines: parseFloat(mealData.proteins) || 0,
@@ -386,10 +387,10 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         ordre_consommation: analysisResult.nutritionalInfo.ordreConsommation || [],
         commentaire: ''
       };
-
+  
       // Ajouter un log pour déboguer
       console.log('Données envoyées pour sauvegarde:', JSON.stringify(repasData, null, 2));
-
+  
       // Envoyer les données au serveur
       await axios.post(`${API_URL}/api/repas`, repasData, {
         headers: {
@@ -397,15 +398,15 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           'Authorization': `Bearer ${token}`
         }
       });
-
+  
       setSuccess('Repas sauvegardé avec succès');
       setLoading(false);
-
+  
       // Rediriger vers l'écran d'accueil après 2 secondes
       setTimeout(() => {
-        navigation.navigate('MealAnalysis');
+        navigation.navigate('Home');
       }, 2000);
-
+  
     } catch (err) {
       console.error('Erreur lors de la sauvegarde du repas:', err);
       setError('Une erreur est survenue lors de la sauvegarde. Veuillez réessayer.');

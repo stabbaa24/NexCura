@@ -152,7 +152,7 @@ const HistoricMealAnalysisScreen = ({ navigation }) => {
                 >
                     <View style={styles.mealHeaderContent}>
                         <Text style={styles.mealTitle}>
-                            {item.description || "Repas sans description"}
+                            {item.nom || item.description || "Repas sans nom"}
                         </Text>
                         <Text style={styles.mealDate}>{formatDate(item.date)}</Text>
                     </View>
@@ -175,6 +175,12 @@ const HistoricMealAnalysisScreen = ({ navigation }) => {
                                     console.error('Error loading image:', e.nativeEvent.error, getFullImageUrl(item.photo));
                                 }}
                             />
+                        )}
+                        {item.description && item.description !== item.nom && (
+                            <View style={styles.descriptionContainer}>
+                                <Text style={styles.descriptionLabel}>Description:</Text>
+                                <Text style={styles.descriptionText}>{item.description}</Text>
+                            </View>
                         )}
 
                         <View style={styles.nutritionContainer}>
@@ -272,10 +278,7 @@ const HistoricMealAnalysisScreen = ({ navigation }) => {
     // Rendu principal
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>Mes Repas</Text>
-                <View style={styles.divider} />
-            </View>
+
 
             {error ? (
                 <View style={styles.messageContainer}>
@@ -472,7 +475,7 @@ const styles = StyleSheet.create({
     glycemicImpact: {
         fontWeight: 'bold',
         color: '#2196F3',
-      },
+    },
     foodItemsContainer: {
         marginVertical: 16,
     },
@@ -565,6 +568,24 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '500',
     },
+    descriptionContainer: {
+        marginBottom: 15,
+        padding: 10,
+        backgroundColor: '#f9f9f9',
+        borderRadius: 8,
+        borderLeftWidth: 3,
+        borderLeftColor: '#4CAF50',
+      },
+      descriptionLabel: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 5,
+      },
+      descriptionText: {
+        fontSize: 15,
+        color: '#444',
+      }
 });
 
 export default HistoricMealAnalysisScreen;

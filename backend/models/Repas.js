@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const RepasSchema = new mongoose.Schema({
   user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   photo: { type: String }, 
+  nom: { type: String, default: 'Repas sans nom' }, // Ajout du champ nom
   description: { type: String, required: true },
   index_glycemique: { type: Number, default: 0 },
   glucides_totaux: { type: Number, default: 0 },

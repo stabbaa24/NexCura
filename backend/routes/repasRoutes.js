@@ -301,6 +301,7 @@ router.post('/', auth, async (req, res) => {
   try {
     const { 
       photo, 
+      nom,         // Ajout du champ nom
       description, 
       index_glycemique, 
       glucides_totaux, 
@@ -317,6 +318,7 @@ router.post('/', auth, async (req, res) => {
     const newRepas = new Repas({
       user_id: req.user.userId,
       photo,
+      nom: nom || 'Repas sans nom',  // Utilisation du nom avec valeur par défaut
       description,
       index_glycemique,
       glucides_totaux,
