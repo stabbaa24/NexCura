@@ -44,10 +44,10 @@ const MealAnalysisScreen = ({ navigation, route }) => {
       setError('Veuillez indiquer le nom et la quantité de l\'aliment');
       return;
     }
-    
-    setFoodItems([...foodItems, { 
-      name: newFoodItem.name.trim(), 
-      quantity: newFoodItem.quantity.trim() 
+
+    setFoodItems([...foodItems, {
+      name: newFoodItem.name.trim(),
+      quantity: newFoodItem.quantity.trim()
     }]);
     setNewFoodItem({ name: '', quantity: '' });
     setError('');
@@ -237,7 +237,11 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           fats: analysis.lipides || 0,
           calories: analysis.calories || 0,
           glycemicIndex: analysis.index_glycemique || 0,
-          aliments: analysis.aliments || []
+          fibres: analysis.fibres || 0,
+          aliments: analysis.aliments || [],
+          impactAvant: analysis.impact_glycemique?.avant_repas || 0,
+          impactApres: analysis.impact_glycemique?.apres_repas || 0,
+          ordreConsommation: analysis.ordre_consommation || []
         },
         imageUrl // Stocker le chemin relatif
       });
@@ -305,7 +309,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         }
       });
 
-      
+
       // Traiter la réponse
       const { analysis } = response.data;
 
@@ -653,11 +657,21 @@ const MealAnalysisScreen = ({ navigation, route }) => {
               <Text style={[
                 styles.resultValue,
                 analysisResult.impact === 'élevé' ? styles.highImpact :
-                analysisResult.impact === 'modéré' ? styles.mediumImpact :
-                styles.lowImpact
+                  analysisResult.impact === 'modéré' ? styles.mediumImpact :
+                    styles.lowImpact
               ]}>
                 {analysisResult.impact}
               </Text>
+            </View>
+
+            <View style={styles.resultItem}>
+              <Text style={styles.resultLabel}>Glycémie avant repas (estimée):</Text>
+              <Text style={styles.resultValue}>{analysisResult.nutritionalInfo.impactAvant} mg/dL</Text>
+            </View>
+
+            <View style={styles.resultItem}>
+              <Text style={styles.resultLabel}>Glycémie après repas (estimée):</Text>
+              <Text style={styles.resultValue}>{analysisResult.nutritionalInfo.impactApres} mg/dL</Text>
             </View>
 
             <View style={styles.resultItem}>
@@ -679,6 +693,19 @@ const MealAnalysisScreen = ({ navigation, route }) => {
               </View>
             )}
 
+            {analysisResult.nutritionalInfo.ordreConsommation && analysisResult.nutritionalInfo.ordreConsommation.length > 0 && (
+              <View style={styles.foodItemsContainer}>
+                <Text style={styles.foodItemsTitle}>Ordre de consommation recommandé:</Text>
+                <View style={styles.foodItemsList}>
+                  {analysisResult.nutritionalInfo.ordreConsommation.map((food, index) => (
+                    <View key={index} style={styles.foodItem}>
+                      <Text style={styles.foodItemNumber}>{index + 1}.</Text>
+                      <Text style={styles.foodItemText}>{food}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
             <View style={styles.nutritionContainer}>
               <View style={styles.nutritionItem}>
                 <Icon name="food-apple" size={24} color="#4CAF50" />
@@ -1004,6 +1031,12 @@ const styles = StyleSheet.create({
   foodItemsList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  foodItemNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#4CAF50',
+    marginRight: 5,
   },
   foodItemsContainer: {
     marginVertical: 10,

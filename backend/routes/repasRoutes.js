@@ -11,7 +11,7 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     console.log(`🔍 Vérification de la clé API OpenAI: ${process.env.OPENAI_API_KEY ? "OK" : "NON TROUVÉE"}`);
 
     if (!process.env.OPENAI_API_KEY) {
-      throw new Error('❌ Clé API OpenAI manquante. Ajoutez-la dans les variables d’environnement.');
+      throw new Error('❌ Clé API OpenAI manquante. Ajoutez-la dans les variables d'environnement.');
     }
 
     // URL complète de l'image
@@ -24,18 +24,34 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
     // Définition du modèle : gpt-4o ou fallback vers gpt-3.5-turbo
     let modelToUse = "gpt-4o"; 
 
+    // Amélioration du prompt pour obtenir des informations plus détaillées
     const requestBody = {
       model: modelToUse,
       messages: [
         {
           role: "user",
           content: [
-            { type: "text", text: "Analyse cette image de repas et donne-moi les valeurs nutritionnelles en JSON: aliments (array), calories (number), glucides (number), lipides (number), protéines (number), fibres (number), index_glycemique (number)." },
+            { 
+              type: "text", 
+              text: "Analyse cette image de repas et donne-moi les informations suivantes au format JSON strict:\n" +
+                    "- aliments (array): liste détaillée des aliments visibles avec estimation des quantités en grammes\n" +
+                    "- calories (number): estimation des calories totales\n" +
+                    "- glucides (number): estimation des glucides totaux en grammes\n" +
+                    "- lipides (number): estimation des lipides totaux en grammes\n" +
+                    "- proteines (number): estimation des protéines totales en grammes\n" +
+                    "- fibres (number): estimation des fibres totales en grammes\n" +
+                    "- index_glycemique (number): estimation de l'index glycémique moyen du repas (0-100)\n" +
+                    "- impact_glycemique_avant (number): estimation de l'impact sur la glycémie avant le repas (mg/dL)\n" +
+                    "- impact_glycemique_apres (number): estimation de l'impact sur la glycémie après le repas (mg/dL)\n" +
+                    "- ordre_consommation (array): ordre recommandé de consommation des aliments pour minimiser l'impact glycémique\n" +
+                    "- description (string): description détaillée du repas\n" +
+                    "Réponds uniquement avec un objet JSON valide."
+            },
             { type: "image_url", image_url: { url: fullImageUrl } }
           ]
         }
       ],
-      max_tokens: 800
+      max_tokens: 1000
     };
 
     // Envoi de la requête OpenAI
@@ -92,12 +108,77 @@ const analyzeImageWithOpenAI = async (imageUrl) => {
       proteines: 0,
       fibres: 0,
       index_glycemique: 0,
+      impact_glycemique_avant: 0,
+      impact_glycemique_apres: 0,
+      ordre_consommation: [],
       description: "Analyse non disponible - Erreur OpenAI"
     };
   }
 };
 
-// Service pour prédire l'impact sur la glycémie
+// Maintenant, modifions la route d'analyse pour utiliser ces nouvelles informations
+router.post('/analyze', auth, upload.single('image'), async (req, res) => {
+  try {
+    // Vérifier si une image a été téléchargée
+    if (!req.file) {
+      return res.status(400).json({ message: 'Aucune image fournie' });
+    }
+  
+    // Uploader l'image vers Cloudinary
+    const result = await uploadToCloudinary(req.file.path);
+    
+    // Extraire seulement la partie de l'URL après "upload/"
+    const cloudinaryPath = result.secure_url.split('upload/')[1];
+    console.log("Chemin Cloudinary stocké:", cloudinaryPath);
+    
+    // Utiliser l'URL complète pour l'analyse
+    const analysisResult = await analyzeImageWithOpenAI(result.secure_url);
+  
+    // Récupérer les données de l'utilisateur pour la prédiction
+    const user = await User.findById(req.user.userId);
+    
+    // Préparer les données du repas avec les nouvelles informations
+    const mealData = {
+      description: analysisResult.description || req.body.description || '',
+      glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
+      index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
+      calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
+      proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
+      lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
+      aliments: analysisResult.aliments || [],
+      impact_glycemique: {
+        avant_repas: analysisResult.impact_glycemique_avant || 0,
+        apres_repas: analysisResult.impact_glycemique_apres || 0
+      },
+      ordre_consommation: analysisResult.ordre_consommation || []
+    };
+  
+    // Générer des recommandations basées sur l'ordre de consommation
+    let recommandations = [];
+    
+    if (mealData.ordre_consommation && mealData.ordre_consommation.length > 0) {
+      recommandations.push(`Pour minimiser l'impact glycémique, consommez les aliments dans cet ordre: ${mealData.ordre_consommation.join(', ')}`);
+    } else {
+      recommandations = generateRecommendations(mealData, user);
+    }
+  
+    // Renvoyer les résultats de l'analyse avec le chemin relatif de l'image
+    res.status(200).json({
+      message: 'Analyse du repas réussie',
+      imageUrl: cloudinaryPath, // Stocker seulement le chemin relatif
+      analysis: {
+        ...mealData,
+        impact_glycemique: mealData.impact_glycemique.apres_repas || predictGlycemicImpact(user, mealData).impact_estime,
+        recommandations: recommandations
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'analyse du repas:', error);
+    res.status(500).json({ message: 'Erreur lors de l\'analyse du repas', error: error.message });
+  }
+});
+
+// Le reste du code reste inchangé
 const predictGlycemicImpact = async (userData, mealData) => {
   // Logique simplifiée pour prédire l'impact glycémique
   // Dans une implémentation réelle, vous pourriez utiliser un modèle ML plus sophistiqué
@@ -160,98 +241,49 @@ const generateRecommendations = (mealData, userData) => {
   return recommendations;
 };
 
-// Route pour ajouter un repas avec analyse d'image
-router.post('/analyze', auth, upload.single('image'), async (req, res) => {
-  try {
-    // Vérifier si une image a été téléchargée
-    if (!req.file) {
-      return res.status(400).json({ message: 'Aucune image fournie' });
-    }
-  
-    // Uploader l'image vers Cloudinary
-    const result = await uploadToCloudinary(req.file.path);
-    
-    // Extraire seulement la partie de l'URL après "upload/"
-    const cloudinaryPath = result.secure_url.split('upload/')[1];
-    console.log("Chemin Cloudinary stocké:", cloudinaryPath);
-    
-    // Utiliser l'URL complète pour l'analyse
-    const analysisResult = await analyzeImageWithOpenAI(result.secure_url);
-  
-    // Récupérer les données de l'utilisateur pour la prédiction
-    const user = await User.findById(req.user.userId);
-    
-    // Préparer les données du repas
-    const mealData = {
-      description: analysisResult.description || req.body.description || '',
-      glucides_totaux: analysisResult.glucides || parseFloat(req.body.glucides_totaux) || 0,
-      index_glycemique: analysisResult.index_glycemique || parseFloat(req.body.index_glycemique) || 0,
-      calories: analysisResult.calories || parseFloat(req.body.calories) || 0,
-      proteines: analysisResult.proteines || parseFloat(req.body.proteines) || 0,
-      lipides: analysisResult.lipides || parseFloat(req.body.lipides) || 0,
-      aliments: analysisResult.aliments || []
-    };
-  
-    // Prédire l'impact glycémique
-    const impactPrediction = await predictGlycemicImpact(user, mealData);
-  
-    // Renvoyer les résultats de l'analyse avec le chemin relatif de l'image
-    res.status(200).json({
-      message: 'Analyse du repas réussie',
-      imageUrl: cloudinaryPath, // Stocker seulement le chemin relatif
-      analysis: {
-        ...mealData,
-        impact_glycemique: impactPrediction.impact_estime,
-        recommandations: impactPrediction.recommandations
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de l\'analyse du repas:', error);
-    res.status(500).json({ message: 'Erreur lors de l\'analyse du repas', error: error.message });
-  }
-});
-
 // Route pour sauvegarder un repas après analyse
 router.post('/', auth, async (req, res) => {
   try {
     const { 
-    photo, 
-    description, 
-    index_glycemique, 
-    glucides_totaux, 
-    impact_glycemique, 
-    commentaire,
-    calories,
-    proteines,
-    lipides,
-    aliments
+      photo, 
+      description, 
+      index_glycemique, 
+      glucides_totaux, 
+      impact_glycemique, 
+      commentaire,
+      calories,
+      proteines,
+      lipides,
+      aliments,
+      recommandations
     } = req.body;
 
     // Créer un nouveau repas
     const newRepas = new Repas({
-    user_id: req.user.userId,
-    photo,
-    description,
-    index_glycemique,
-    glucides_totaux,
-    date: new Date(),
-    impact_glycemique: {
-    avant_repas: impact_glycemique.avant_repas || 0,
-    apres_repas: impact_glycemique.apres_repas || 0
-    },
-    commentaire,
-    calories,
-    proteines,
-    lipides,
-    aliments
+      user_id: req.user.userId,
+      photo,
+      description,
+      index_glycemique,
+      glucides_totaux,
+      date: new Date(),
+      impact_glycemique: {
+        avant_repas: impact_glycemique.avant_repas || 0,
+        apres_repas: impact_glycemique.apres_repas || 0
+      },
+      commentaire,
+      calories,
+      proteines,
+      lipides,
+      aliments,
+      recommandations
     });
 
     // Sauvegarder le repas
     await newRepas.save();
 
     res.status(201).json({
-    message: 'Repas sauvegardé avec succès',
-    repas: newRepas
+      message: 'Repas sauvegardé avec succès',
+      repas: newRepas
     });
   } catch (error) {
     console.error('Erreur lors de la sauvegarde du repas:', error);
@@ -263,7 +295,7 @@ router.post('/', auth, async (req, res) => {
 router.get('/', auth, async (req, res) => {
   try {
     const repas = await Repas.find({ user_id: req.user.userId })
-    .sort({ date: -1 });
+      .sort({ date: -1 });
 
     res.json(repas);
   } catch (error) {

@@ -9,6 +9,7 @@ const RepasSchema = new mongoose.Schema({
   proteines: { type: Number },
   lipides: { type: Number },
   calories: { type: Number },
+  fibres: { type: Number },
   aliments: [{ type: String }],
   date: { type: Date, required: true },
   impact_glycemique: {
@@ -16,6 +17,7 @@ const RepasSchema = new mongoose.Schema({
     apres_repas: { type: Number },
   },
   recommandations: [{ type: String }],
+  ordre_consommation: [{ type: String }],
   commentaire: { type: String },
 });
 
