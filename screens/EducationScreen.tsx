@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ScrollViewProps, TouchableOpacity, Image, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { Linking } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.9;
@@ -18,7 +19,7 @@ const EducationScreen = () => {
 
 
   const renderDiabeteContent = () => (
-    <ScrollView ref={diabeteRef} style={styles.contentContainer}>
+    <ScrollView ref={diabeteRef} style={styles.contentContainer} contentContainerStyle={{ paddingBottom: 10 }}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Qu'est-ce que le diabète ?</Text>
         <Text style={styles.cardText}>
@@ -123,7 +124,7 @@ const EducationScreen = () => {
               <Text style={styles.organText}>Pancréas</Text>
             </View>
             <View style={styles.organItem}>
-              <Icon name="organ" size={32} color="#2196F3" />
+              <Icon name="skull" size={32} color="#2196F3" />
               <Text style={styles.organText}>Foie</Text>
             </View>
           </View>
@@ -167,29 +168,38 @@ const EducationScreen = () => {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Besoin d'aller plus loin ?</Text>
-        <Text style={styles.cardSubtitle}>Vous avez des questions ?</Text>
-        <Text style={styles.cardText}>Rapprochez-vous de :</Text>
-        <View style={styles.contactList}>
-          <View style={styles.contactItem}>
-            <Icon name="doctor" size={24} color="#2196F3" />
-            <Text style={styles.contactText}>Votre médecin traitant et/ou médecin du travail</Text>
-          </View>
-          <View style={styles.contactItem}>
-            <Icon name="hospital-building" size={24} color="#2196F3" />
-            <Text style={styles.contactText}>Des infirmièr(e)s dans vos écoles, entreprises, etc...</Text>
-          </View>
-        </View>
-      </View>
+  <Text style={styles.cardTitle}>Besoin d'aller plus loin ?</Text>
+  <Text style={styles.cardSubtitle}>Vous avez des questions ?</Text>
+  <Text style={styles.cardText}>Rapprochez-vous de :</Text>
+  <View style={styles.contactList}>
+    <View style={styles.contactItem}>
+      <Icon name="doctor" size={24} color="#2196F3" />
+      <Text style={styles.contactText}>Votre médecin traitant et/ou médecin du travail</Text>
+    </View>
+    <View style={styles.contactItem}>
+      <Icon name="hospital-building" size={24} color="#2196F3" />
+      <Text style={styles.contactText}>Des infirmièr(e)s dans vos écoles, entreprises, etc...</Text>
+    </View>
+  </View>
+  <TouchableOpacity onPress={() => Linking.openURL('https://www.federationdesdiabetiques.org')}>
+    <Text style={[styles.cardText, { color: '#4CAF50', marginTop: 10 }]}>
+      En savoir plus sur le site de la Fédération Française des Diabétiques
+    </Text>
+  </TouchableOpacity>
+</View>
 
-      <View style={styles.footerCard}>
-        <Text style={styles.footerTitle}>Le diabète : Comprendre, prévenir & agir !</Text>
-      </View>
+      <View style={styles.footerNote}>
+  <Text style={styles.footerNoteText}>
+    Cette documentation m’a été transmise par l’infirmière Magalie.
+  </Text>
+</View>
+
+
     </ScrollView>
   );
 
   const renderNutritionContent = () => (
-    <ScrollView ref={nutritionRef} style={styles.contentContainer}>
+    <ScrollView ref={nutritionRef} style={styles.contentContainer} contentContainerStyle={{ paddingBottom: 10 }}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Le sucre : un peu, beaucoup, à la folie ou pas du tout ?</Text>
         <Text style={styles.cardText}>
@@ -340,6 +350,11 @@ const EducationScreen = () => {
             <Text style={styles.contactText}>Des infirmièr(e)s des sites de Sopra Steria</Text>
           </View>
         </View>
+        <TouchableOpacity onPress={() => Linking.openURL('https://www.mangerbouger.fr')}>
+          <Text style={[styles.cardText, { color: '#4CAF50', marginTop: 10 }]}>
+            En savoir plus sur le site MangerBouger.fr
+          </Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -538,19 +553,22 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     flexShrink: 1,
   },
-  footerCard: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  footerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-  },
+  footerNote: {
+  backgroundColor: '#f0f0f0',
+  borderRadius: 8,
+  padding: 12,
+  marginBottom: 16,
+  alignItems: 'center',
+  borderWidth: 1,
+  borderColor: '#ddd',
+},
+footerNoteText: {
+  fontSize: 13,
+  color: '#555',
+  textAlign: 'center',
+  fontStyle: 'italic',
+},
+
   // Styles pour la section nutrition
   sugarTypes: {
     marginTop: 8,
