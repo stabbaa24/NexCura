@@ -1,15 +1,24 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, ScrollViewProps, TouchableOpacity, Image, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.9;
 
 const EducationScreen = () => {
+  const scrollRef = useRef(null);
+  const diabeteRef = useRef<ScrollView>(null);
+  const nutritionRef = useRef<ScrollView>(null);
   const [activeTab, setActiveTab] = useState('diabete');
+  
+  useEffect(() => {
+    const ref = activeTab === 'diabete' ? diabeteRef.current : nutritionRef.current;
+    ref?.scrollTo({ y: 0, animated: true });
+  }, [activeTab]);
+
 
   const renderDiabeteContent = () => (
-    <ScrollView style={styles.contentContainer}>
+    <ScrollView ref={diabeteRef} style={styles.contentContainer}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Qu'est-ce que le diabète ?</Text>
         <Text style={styles.cardText}>
@@ -180,7 +189,7 @@ const EducationScreen = () => {
   );
 
   const renderNutritionContent = () => (
-    <ScrollView style={styles.contentContainer}>
+    <ScrollView ref={nutritionRef} style={styles.contentContainer}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Le sucre : un peu, beaucoup, à la folie ou pas du tout ?</Text>
         <Text style={styles.cardText}>
