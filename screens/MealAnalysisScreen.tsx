@@ -755,24 +755,27 @@ const MealAnalysisScreen = ({ navigation, route }) => {
               </View>
             ))}
 
+            <View style={styles.buttonGroup}>
             <TouchableOpacity
-              style={[styles.button, styles.saveButton]}
-              onPress={saveMeal}
-              disabled={loading}
+                style={[styles.buttonSmall, styles.saveButton]}
+                onPress={saveMeal}
+                disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={styles.buttonText}>Sauvegarder ce repas</Text>
-              )}
-            </TouchableOpacity>
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Sauvegarder</Text>
+                )}
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={resetAnalysis}
-            >
-              <Text style={styles.secondaryButtonText}>Nouvelle analyse</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.buttonSmall, styles.secondaryButton]}
+                onPress={resetAnalysis}
+              >
+                <Text style={styles.secondaryButtonText}>Annuler</Text>
+              </TouchableOpacity>
+            </View>
+
           </View>
         )}
       </ScrollView>
@@ -919,23 +922,23 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   secondaryButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#4CAF50'
   },
   saveButton: {
-    backgroundColor: '#2196F3',
-    marginTop: 20,
+    backgroundColor: '#4CAF50',
+    
   },
   buttonText: {
-    color: 'white',
-    fontSize: 16,
+    color: '#fff',
     fontWeight: 'bold',
+    fontSize: 15,
   },
   secondaryButtonText: {
-    color: '#555',
-    fontSize: 16,
-    fontWeight: '500',
+    color: '#4CAF50',
+    fontWeight: '600',
+    fontSize: 15,
   },
   messageContainer: {
     padding: 12,
@@ -959,23 +962,31 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   resultItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  resultLabel: {
-    fontSize: 16,
-    color: '#555',
-    fontWeight: '500',
-  },
-  resultValue: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
-  },
+  flexDirection: 'row',
+  flexWrap: 'wrap', // Permet aux lignes longues de revenir à la ligne
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginBottom: 12,
+  paddingBottom: 8,
+  borderBottomWidth: 1,
+  borderBottomColor: '#f0f0f0',
+},
+resultLabel: {
+  fontSize: 16,
+  color: '#555',
+  fontWeight: '500',
+  flex: 1,
+  marginRight: 10, // espace entre label et valeur
+},
+resultValue: {
+  fontSize: 16,
+  color: '#333',
+  fontWeight: 'bold',
+  textAlign: 'right',
+  flexShrink: 1,
+  maxWidth: '50%', // limite pour éviter que ça déborde
+},
+
   highImpact: {
     color: '#D32F2F',
   },
@@ -1149,6 +1160,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     marginRight: 8,
-  }
+  },
+  buttonGroup: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginTop: 15,
+  gap: 10, // si gap n’est pas supporté, utilise marginRight
+},
+
+buttonSmall: {
+  flex: 1,
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+  borderRadius: 8,
+  alignItems: 'center',
+  elevation: 2,
+}
 });
 export default MealAnalysisScreen;
