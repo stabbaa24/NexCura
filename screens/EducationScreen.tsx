@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ScrollViewProps, TouchableOpacity, Image, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { Linking } from 'react-native';
+import PieChart from 'react-native-pie-chart';
 
 const { width } = Dimensions.get('window');
 const cardWidth = width * 0.9;
@@ -16,6 +17,40 @@ const EducationScreen = () => {
     const ref = activeTab === 'diabete' ? diabeteRef.current : nutritionRef.current;
     ref?.scrollTo({ y: 0, animated: true });
   }, [activeTab]);
+
+  
+
+const renderPlate = () => {
+  const widthAndHeight = 180;
+  const series = [
+    { value: 50, color: '#43A047' },   // Légumes
+    { value: 25, color: '#FB8C00' },   // Féculents
+    { value: 25, color: '#8E24AA' },   // Protéines
+  ];
+
+  return (
+    <View style={{ alignItems: 'center', marginVertical: 20 }}>
+      <PieChart
+        widthAndHeight={widthAndHeight}
+        series={series}
+      />
+      <View style={styles.legendRow}>
+        <View style={styles.legendItem}>
+          <Icon name="food-apple" size={18} color="#43A047" style={{ marginRight: 6 }} />
+          <Text style={styles.legendLabel}>Légumes (50%)</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <Icon name="bread-slice" size={18} color="#FB8C00" style={{ marginRight: 6 }} />
+          <Text style={styles.legendLabel}>Féculents (25%)</Text>
+        </View>
+        <View style={styles.legendItem}>
+          <Icon name="food-drumstick" size={18} color="#8E24AA" style={{ marginRight: 6 }} />
+          <Text style={styles.legendLabel}>Protéines (25%)</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 
   const renderDiabeteContent = () => (
@@ -314,19 +349,7 @@ const EducationScreen = () => {
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>L'assiette idéale !</Text>
-        <View style={styles.plateContainer}>
-          <View style={styles.plateSection}>
-            <View style={[styles.platePart, styles.plateVegetables]}>
-              <Text style={styles.plateText}>En légumes</Text>
-            </View>
-            <View style={[styles.platePart, styles.plateStarch]}>
-              <Text style={styles.plateText}>En féculents</Text>
-            </View>
-            <View style={[styles.platePart, styles.plateProtein]}>
-              <Text style={styles.plateText}>En protéines</Text>
-            </View>
-          </View>
-        </View>
+          {renderPlate()}
         <Text style={styles.cardSubtitle}>Vous connaissez la loi Pareto 80/20 ?</Text>
         <Text style={styles.cardText}>• 10 repas selon l'assiette idéale</Text>
         <Text style={styles.cardText}>• 4 repas plaisir par semaine</Text>
@@ -686,6 +709,32 @@ footerNoteText: {
     textAlign: 'center',
     padding: 5,
   },
+  plateLegend: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#444',
+    marginTop: 8,
+  },
+legendRow: {
+  marginTop: 16,
+},
+legendItem: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 8,
+},
+legendColor: {
+  width: 12,
+  height: 12,
+  borderRadius: 6,
+  marginRight: 8,
+},
+legendLabel: {
+  fontSize: 14,
+  color: '#333',
+},
+
+
 });
 
 export default EducationScreen;
