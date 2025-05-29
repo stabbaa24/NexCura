@@ -217,6 +217,36 @@ const LogoutScreen = () => {
 const DrawerNavigator = () => (
   <Drawer.Navigator
     screenOptions={{
+      swipeEnabled: true, // ✅ autoriser le glissement
+      drawerStyle: {
+        backgroundColor: '#f5f5f5',
+        width: 240,
+      },
+      drawerActiveTintColor: '#4CAF50',
+      drawerInactiveTintColor: 'gray',
+      headerShown: false,
+    }}
+  >
+    <Drawer.Screen
+      name="MainApp"
+      component={MainApp}
+      options={{ drawerItemStyle: { height: 0 } }} // ✅ caché du menu
+    />
+    <Drawer.Screen
+      name="Logout"
+      component={LogoutScreen}
+      options={{
+        title: 'Déconnexion',
+        drawerIcon: ({ color, size }) => (
+          <Icon name="logout" size={size} color={color} />
+        ),
+      }}
+    />
+  </Drawer.Navigator>
+);
+
+  /*<Drawer.Navigator
+    screenOptions={{
       drawerStyle: {
         backgroundColor: '#f5f5f5',
         width: 240,
@@ -278,6 +308,7 @@ const DrawerNavigator = () => (
         drawerIcon: ({ color, size }) => <Icon name="account" size={size} color={color} />,
       }}
     />
+
     <Drawer.Screen
       name="Logout"
       component={LogoutScreen}
@@ -285,9 +316,8 @@ const DrawerNavigator = () => (
         title: 'Déconnexion',
         drawerIcon: ({ color, size }) => <Icon name="logout" size={size} color={color} />,
       }}
-    />
-  </Drawer.Navigator>
-);
+    />*/
+
 
 // Navigateur d'authentification
 const AuthNavigator = () => (

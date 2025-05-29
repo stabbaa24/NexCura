@@ -323,102 +323,110 @@ const CalendarScreen = () => {
 
       {/* Modal for adding new appointment */}
       <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Ajouter un rendez-vous</Text>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Type de rendez-vous</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: Diabétologue, Ophtalmologue..."
-                value={appointmentType}
-                onChangeText={setAppointmentType}
-              />
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Lieu</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex: Hôpital, Cabinet médical..."
-                value={appointmentLocation}
-                onChangeText={setAppointmentLocation}
-              />
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Date</Text>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Text>{appointmentDate.toLocaleDateString('fr-FR')}</Text>
-                <Icon name="calendar" size={20} color="#689D71" />
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={appointmentDate}
-                  mode="date"
-                  display="default"
-                  onChange={onDateChange}
-                />
-              )}
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Heure</Text>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => setShowTimePicker(true)}
-              >
-                <Text>{appointmentTime.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</Text>
-                <Icon name="clock-outline" size={20} color="#689D71" />
-              </TouchableOpacity>
-              {showTimePicker && (
-                <DateTimePicker
-                  value={appointmentTime}
-                  mode="time"
-                  display="default"
-                  onChange={onTimeChange}
-                />
-              )}
-            </View>
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Note (optionnel)</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Ajouter une note..."
-                value={appointmentNote}
-                onChangeText={setAppointmentNote}
-                multiline={true}
-                numberOfLines={3}
-              />
-            </View>
-            
-            <View style={styles.modalButtons}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.cancelButtonText}>Annuler</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.saveButton]}
-                onPress={addAppointment}
-              >
-                <Text style={styles.saveButtonText}>Enregistrer</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+  animationType="slide"
+  transparent={true}
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 10 }}>
+        <Text style={styles.modalTitle}>Ajouter un rendez-vous</Text>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Type de rendez-vous</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ex: Diabétologue, Ophtalmologue..."
+            value={appointmentType}
+            onChangeText={setAppointmentType}
+          />
         </View>
-      </Modal>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Lieu</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ex: Hôpital, Cabinet médical..."
+            value={appointmentLocation}
+            onChangeText={setAppointmentLocation}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Date</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text>{appointmentDate.toLocaleDateString('fr-FR')}</Text>
+            <Icon name="calendar" size={20} color="#689D71" />
+          </TouchableOpacity>
+          {showDatePicker && (
+            <DateTimePicker
+              value={appointmentDate}
+              mode="date"
+              display="default"
+              onChange={onDateChange}
+            />
+          )}
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Heure</Text>
+          <TouchableOpacity
+            style={styles.dateButton}
+            onPress={() => setShowTimePicker(true)}
+          >
+            <Text>
+              {appointmentTime.toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+            <Icon name="clock-outline" size={20} color="#689D71" />
+          </TouchableOpacity>
+          {showTimePicker && (
+            <DateTimePicker
+              value={appointmentTime}
+              mode="time"
+              display="default"
+              onChange={onTimeChange}
+            />
+          )}
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.inputLabel}>Note (optionnel)</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Ajouter une note..."
+            value={appointmentNote}
+            onChangeText={setAppointmentNote}
+            multiline={true}
+            numberOfLines={3}
+          />
+        </View>
+      </ScrollView>
+
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={[styles.modalButton, styles.cancelButton]}
+          onPress={() => setModalVisible(false)}
+        >
+          <Text style={styles.cancelButtonText}>Annuler</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.modalButton, styles.saveButton]}
+          onPress={addAppointment}
+        >
+          <Text style={styles.saveButtonText}>Enregistrer</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
     </View>
   );
 };
@@ -554,25 +562,25 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#f9f9f9',
   },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f5f5f5',
-    marginRight: 10,
-  },
-  saveButton: {
-    backgroundColor: '#689D71',
-    marginLeft: 10,
-  },
+modalButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginTop: 20,
+  gap: 10, // Espacement sans débordement
+},
+modalButton: {
+  flex: 1,
+  padding: 12,
+  borderRadius: 8,
+  alignItems: 'center',
+},
+cancelButton: {
+  backgroundColor: '#f5f5f5'
+},
+saveButton: {
+  backgroundColor: '#689D71'
+},
+
   cancelButtonText: {
     color: '#000000',
     fontWeight: 'bold',
