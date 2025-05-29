@@ -275,90 +275,6 @@ const MealAnalysisScreen = ({ navigation, route }) => {
     }
   };
 
-  // Le reste du code reste inchangé
-  const analyzeManually = async () => {
-    try {
-      setLoading(true);
-      setError('');
-
-      // Validation des champs
-      if (!mealData.name.trim()) {
-        setError('Veuillez donner un nom à votre repas');
-        setLoading(false);
-        return;
-      }
-
-      if (!mealData.description.trim() && foodItems.length === 0) {
-        setError('Veuillez décrire votre repas ou ajouter des aliments');
-        setLoading(false);
-        return;
-      }
-
-      // Obtenir le token d'authentification
-      const token = await AsyncStorage.getItem('token');
-      if (!token) {
-        setError('Vous devez être connecté pour analyser un repas');
-        setLoading(false);
-        return;
-      }
-
-      // Préparer les données pour l'analyse
-      const analysisData = {
-        description: mealData.description,
-        aliments: foodItems.map(item => `${item.name} (${item.quantity}g)`)
-      };
-
-      console.log('Données envoyées pour analyse manuelle:', analysisData);
-
-      // Envoyer les données au serveur pour analyse par l'IA
-      const response = await axios.post(`${API_URL}/api/repas/analyze-manual`, analysisData, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-
-      // Traiter la réponse
-      const { analysis } = response.data;
-
-      console.log('Réponse reçue pour analyse manuelle:', analysis);
-
-      // Mettre à jour les données du repas avec les résultats de l'analyse
-      setMealData({
-        ...mealData,
-        carbs: analysis.glucides_totaux?.toString() || '',
-        proteins: analysis.proteines?.toString() || '',
-        fats: analysis.lipides?.toString() || '',
-        calories: analysis.calories?.toString() || '',
-        glycemicIndex: analysis.index_glycemique?.toString() || '',
-      });
-
-      // Définir le résultat de l'analyse
-      setAnalysisResult({
-        impact: analysis.impact_glycemique > 50 ? 'élevé' : analysis.impact_glycemique > 30 ? 'modéré' : 'faible',
-        expectedGlucoseRise: `${analysis.impact_glycemique} mg/dL`,
-        recommendations: analysis.recommandations || [],
-        nutritionalInfo: {
-          carbs: analysis.glucides_totaux || 0,
-          proteins: analysis.proteines || 0,
-          fats: analysis.lipides || 0,
-          calories: analysis.calories || 0,
-          glycemicIndex: analysis.index_glycemique || 0,
-          aliments: foodItems.map(item => `${item.name} (${item.quantity}g)`)
-        }
-      });
-
-      setAnalysisMethod('manual');
-      setSuccess('Analyse du repas terminée avec succès');
-      setLoading(false);
-    } catch (err) {
-      console.error('Erreur lors de l\'analyse manuelle:', err);
-      setError('Une erreur est survenue lors de l\'analyse. Veuillez réessayer.');
-      setLoading(false);
-    }
-  };
-
   // Fonction pour sauvegarder le repas
   const saveMeal = async () => {
     try {
@@ -483,13 +399,6 @@ const MealAnalysisScreen = ({ navigation, route }) => {
           <View style={styles.methodSelection}>
             <Text style={styles.sectionTitle}>Choisissez une méthode d'analyse</Text>
 
-            <TouchableOpacity
-              style={styles.methodButton}
-              onPress={() => setAnalysisMethod('manual')}
-            >
-              <Icon name="pencil" size={32} color="#4CAF50" />
-              <Text style={styles.methodButtonText}>Saisie manuelle</Text>
-            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.methodButton}
@@ -553,103 +462,6 @@ const MealAnalysisScreen = ({ navigation, route }) => {
                   <ActivityIndicator size="small" color="#fff" />
                 ) : (
                   <Text style={styles.buttonText}>Analyser cette image</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : null}
-
-        {analysisMethod === 'manual' && !analysisResult ? (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Informations sur le repas</Text>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Nom du repas</Text>
-              <TextInput
-                style={styles.input}
-                value={mealData.name}
-                onChangeText={(text) => handleChange('name', text)}
-                placeholder="Ex: Petit-déjeuner, Déjeuner, etc."
-              />
-            </View>
-
-            <View style={styles.formGroup}>
-              <Text style={styles.label}>Description du plat</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={mealData.description}
-                onChangeText={(text) => handleChange('description', text)}
-                placeholder="Ex: Salade de quinoa avec poulet et avocat"
-                multiline
-                numberOfLines={2}
-              />
-            </View>
-
-            <Text style={styles.sectionSubtitle}>Aliments et quantités</Text>
-
-            {/* Liste des aliments ajoutés */}
-            {foodItems.length > 0 && (
-              <View style={styles.foodItemsContainer}>
-                {foodItems.map((item, index) => (
-                  <View key={index} style={styles.foodItemRow}>
-                    <Text style={styles.foodItemText}>{item.name} - {item.quantity}g</Text>
-                    <TouchableOpacity onPress={() => removeFoodItem(index)}>
-                      <Icon name="close-circle" size={20} color="#D32F2F" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Formulaire d'ajout d'aliment */}
-            <View style={styles.rowContainer}>
-              <View style={[styles.formGroup, { flex: 2 }]}>
-                <Text style={styles.label}>Aliment</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newFoodItem.name}
-                  onChangeText={(text) => setNewFoodItem({ ...newFoodItem, name: text })}
-                  placeholder="Ex: Poulet, Riz, Avocat..."
-                />
-              </View>
-
-              <View style={[styles.formGroup, { flex: 1, marginLeft: 10 }]}>
-                <Text style={styles.label}>Quantité (g)</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newFoodItem.quantity}
-                  onChangeText={(text) => setNewFoodItem({ ...newFoodItem, quantity: text })}
-                  placeholder="Ex: 100"
-                  keyboardType="numeric"
-                />
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.addFoodButton}
-              onPress={addFoodItem}
-            >
-              <Icon name="plus" size={16} color="#fff" />
-              <Text style={styles.addFoodButtonText}>Ajouter cet aliment</Text>
-            </TouchableOpacity>
-
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.button, styles.secondaryButton]}
-                onPress={resetAnalysis}
-              >
-                <Text style={styles.secondaryButtonText}>Annuler</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={analyzeManually}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.buttonText}>Analyser ce repas</Text>
                 )}
               </TouchableOpacity>
             </View>
