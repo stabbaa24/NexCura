@@ -233,11 +233,13 @@ const MealAnalysisScreen = ({ navigation, route }) => {
         glycemicIndex: analysis.index_glycemique?.toString() || '0',
       });
 
+       delta = analysis.impact_glycemique?.apres_repas - analysis.impact_glycemique?.avant_repas;
+
       // Définir le résultat de l'analyse avec l'URL complète de l'image
       setAnalysisResult({
-        impact: analysis.impact_glycemique?.apres_repas > 50 ? 'élevé' :
-                analysis.impact_glycemique?.apres_repas > 30 ? 'modéré' : 'faible',
-        expectedGlucoseRise: `${analysis.impact_glycemique?.apres_repas || 0} mg/dL`,
+      impact: delta > 70 ? 'élevé' :
+              delta > 55 ? 'moyen' : 'faible',
+        expectedGlucoseRise: `${delta} mg/dL`,
         recommendations: analysis.recommandations || [],
         nutritionalInfo: {
           carbs: analysis.glucides_totaux || 0,
@@ -353,6 +355,7 @@ const MealAnalysisScreen = ({ navigation, route }) => {
       glycemicIndex: '',
     });
   };
+let  delta = 0;
 
   return (
     <KeyboardAvoidingView
@@ -478,16 +481,17 @@ const MealAnalysisScreen = ({ navigation, route }) => {
                 style={styles.mealImage}
               />
             )}
-
+ 
             <View style={styles.resultItem}>
               <Text style={styles.resultLabel}>Impact sur la glycémie:</Text>
               <Text style={[
                 styles.resultValue,
-                analysisResult.impact === 'élevé' ? styles.highImpact :
-                  analysisResult.impact === 'modéré' ? styles.mediumImpact :
-                    styles.lowImpact
+                delta > 70 ? styles.highImpact :
+                delta > 55 ? styles.mediumImpact :
+                styles.lowImpact
               ]}>
-                {analysisResult.impact}
+                {delta > 70 ? 'élevé' :
+                delta > 55 ? 'moyen' : 'faible'}
               </Text>
             </View>
 
